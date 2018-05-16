@@ -8,8 +8,7 @@ import (
 )
 
 const (
-	TelegramError = iota
-	ResponseError
+	ResponseError = iota
 	RequestNotOk
 	RequestOk
 )
@@ -54,64 +53,64 @@ type ApiError struct {
 }
 
 var baseUrl = "https://api.telegram.org/"
-var botToken = "495913948:AAHrir-w5aaymPPpPyrp7pYiZqL81DlBA80"
+var botToken = "495913948:AAE-dymFTf_Sj5pxpR4KNf1GwMgcjvMYxwI"
 
 func main(){
-	result, err := sendMessage(487353090, "Hello World")
-
-	if (ApiError{}) != err {
-		fmt.Println("Excecution failed")
-		fmt.Printf("Telegram has returned error '%s' with status code '%d'.", err.Description, err.ErrorCode)
-		return
+	bot, getMeOk := getMe()
+	if getMeOk {
+		println(bot.Result.Username)
 	}
 
-	if result == (SendMessageResult{}) {
-		fmt.Println("Excecution failed, network error?")
-		return
+	sentMessage, ok := sendMessage(487353090, "Hello World")
+	if ok{
+		fmt.Println(sentMessage.Result.Text + " sent.")
 	}
-
-	fmt.Println(result.Result.Text + " sent.")
-	fmt.Println("Execution ok!")
 }
 
-func getMe() (GetMeResult, ApiError) {
-	// Always return an empty error
+func getMe() (GetMeResult, bool) {
+	response, status := makeRequest(fmt.Sprintf("%sbot%s/getMe", baseUrl, botToken))
+	result, ok := statusCheck(GetMeResult{}, response, status)
+	getMeResult, convOk := result.(GetMeResult)
+	if !convOk {
+		println("Casting failed")
+	}
+	return getMeResult, ok
+}
+
+func sendMessage(chatID int, text string) (SendMessageResult, bool) {
+	resp, status := makeRequest(fmt.Sprintf("%sbot%s/sendMessage?chat_id=%d&text=%s", baseUrl, botToken, chatID, text))
+	result, ok := statusCheck(SendMessageResult{}, resp, status)
+	sendMessageResult, _ := result.(SendMessageResult)
+	return sendMessageResult, ok
+}
+
+func statusCheck(result interface{}, resp *http.Response, status int) (interface{}, bool) {
+	var old = result
 	var apiError = ApiError{}
-	var result = GetMeResult{}
 
-	var resp, status = makeRequest(baseUrl + "bot" + botToken + "/" + "getMe")
-	statusCheck(&result, &apiError, resp, status)
-
-	return result, apiError
-}
-
-func sendMessage(chatID int, text string) (SendMessageResult, ApiError) {
-	// Always return an empty error
-	var apiError = ApiError{}
-	var result = SendMessageResult{}
-
-	var resp, status = makeRequest(baseUrl + "bot" + botToken + "/" + "sendMessage?chat_id=487353090&text=" + text)
-	statusCheck(&result, &apiError, resp, status)
-
-	return result, apiError
-}
-
-func statusCheck(result interface{}, apiError *ApiError, resp *http.Response, status int){
 	if status != ResponseError {
-		if status == TelegramError {
-			// Compile the error
+		if status == RequestNotOk {
 			json.NewDecoder(resp.Body).Decode(&apiError)
 		} else {
-			// Use json.Decode for reading streams of JSON data
-			// body, _ := ioutil.ReadAll(resp.Body)
-			// result := string(body)
-			// fmt.Println(result)
 			json.NewDecoder(resp.Body).Decode(&result)
 		}
 	}
 
 	// Defer the closing of the body
 	defer resp.Body.Close()
+
+	if (ApiError{}) != apiError {
+		fmt.Println("Excecution failed")
+		fmt.Printf("Telegram has returned error '%s' with status code '%d'.", apiError.Description, apiError.ErrorCode)
+		return result, false
+	}
+
+	if result == old {
+		fmt.Println("Excecution failed, network error?")
+		return result, false
+	}
+
+	return result, true
 }
 
 func makeRequest(url string) (*http.Response, int)  {
