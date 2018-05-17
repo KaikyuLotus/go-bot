@@ -38,10 +38,7 @@ func start(bot Bot, update Update) {
 ```go
 package main
 
-import (
-	"fmt"
-	. "github.com/kaikyudev/gobot"
-)
+import . "github.com/kaikyudev/gobot"
 
 
 func main(){
@@ -57,7 +54,7 @@ func main(){
 
 // Here our updates will land
 func updateHandler(bot Bot, update Update) {
-	fmt.Printf("Update ID: %d\n", update.UpdateID)
+	println("Update ID: ", update.UpdateID)
 }
 ```
 
