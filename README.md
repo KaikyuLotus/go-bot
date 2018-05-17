@@ -10,42 +10,54 @@ This is my first Go project.<br>
 ```go
 package main
 
-func main() {
-	// instantiate our bot with out custom costructor
+import . "github.com/kaikyudev/gobot"
+
+
+func main(){
+	// Create our bot
 	var bot = NewBot("TOKEN")
 
-	// Add our funcion in response to /helloWorld
-	bot.addCommandHandler("helloWorld", helloWorld)
+	// Add a /command handler function
+	bot.AddCommandHandler("start", start)
 
-	// Start getting updates
-	bot.startPolling(true)
+	// Start getting updates, this is a blocking function
+	bot.StartPolling(false)
 }
 
-func helloWorld(bot Bot, update Update) {
-	bot.sendChatAction(update.Message.Chat.ID, Typing)
-	bot.sendMessage(update.Message.Chat.ID, "Works!")
-
-} // That's it!
+// sendMessage example
+func start(bot Bot, update Update) {
+	msgID := update.Message.MessageID
+	chatID := update.Message.Chat.ID
+	bot.SendChatAction(update.Message.Chat.ID, Typing)
+	                                           // Use SendMessageArgs{} to pass only what you need
+	bot.SendMessage(chatID, "*Markdown*", SendMessageArgs{ReplyToMessageID:msgID, ParseMode:Markdown})
+}
 ```
 
 ### Getting Updates
 ```go
 package main
 
-func main() {
-	// instantiate our bot with out custom costructor
+import (
+	"fmt"
+	. "github.com/kaikyudev/gobot"
+)
+
+
+func main(){
+	// Create our bot
 	var bot = NewBot("TOKEN")
 
-	// Add our funcion in response to any update
-	bot.setUpdateHandler(updateHandler)
+	// Set the update handler function
+	bot.SetUpdateHandler(updateHandler)
 
-	// Start getting updates
-	bot.startPolling(true)
+	// Start getting updates, this is a blocking function
+	bot.StartPolling(false)
 }
 
+// Here our updates will land
 func updateHandler(bot Bot, update Update) {
-	bot.sendChatAction(update.Message.Chat.ID, Typing)
-	bot.sendMessage(update.Message.Chat.ID, "Works!")
+	fmt.Printf("Update ID: %d\n", update.UpdateID)
 }
 ```
 
@@ -53,7 +65,8 @@ func updateHandler(bot Bot, update Update) {
 ## What is working
 
 * Basic API requests
-* Methods: getMe, sendMessage, sendChatAction, getUpdate [more to come...]
+* Methods: getMe, sendMessage, sendPhoto, sendDocument, sendChatAction [more to come...]
 * Commands handling
+* Getting Updates
 
 Not much more...
