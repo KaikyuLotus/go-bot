@@ -9,11 +9,11 @@ func NewBot(token string) *Bot {
 	return bot
 }
 
-func (bot *Bot) setUpdateHandler(foo UpdateHandlerType) {
+func (bot *Bot) SetUpdateHandler(foo UpdateHandlerType) {
 	bot.UpdateHandler = foo
 }
 
-func (bot *Bot) addCommandHandler(command string, foo CommandHandlerType){
+func (bot *Bot) AddCommandHandler(command string, foo CommandHandlerType){
 	bot.CommandHandlers = append(bot.CommandHandlers, CommandStruct{command, foo})
 }
 
@@ -54,7 +54,7 @@ func (bot *Bot) elaborateUpdate(update Update){
 	bot.UpdateHandler(*bot, update)
 }
 
-func (bot *Bot) startPolling(clean bool){
+func (bot *Bot) StartPolling(clean bool){
 	for true {
 		updates, _ := getUpdates(bot.Token, bot.Offset, true)
 		for _, update := range updates.Result {
@@ -63,30 +63,30 @@ func (bot *Bot) startPolling(clean bool){
 	}
 }
 
-func (bot *Bot) sendMessage(chatID int64, text string, args SendMessageArgs) (SendMessageResult, bool) {
+func (bot *Bot) SendMessage(chatID int64, text string, args SendMessageArgs) (SendMessageResult, bool) {
 	return sendMessage(bot.Token, chatID, text, args.ParseMode, args.DisableNotification, args.DisableNotification, args.ReplyToMessageID)
 }
 
-func (bot *Bot) setChatTitle(chatID int64, title string){
+func (bot *Bot) SetChatTitle(chatID int64, title string){
 	setChatTitle(bot.Token, chatID, title)
 }
 
-func (bot *Bot) sendChatAction(chatID int64, action string) (BooleanResult, bool) {
+func (bot *Bot) SendChatAction(chatID int64, action string) (BooleanResult, bool) {
 	return sendChatAction(bot.Token, chatID, action)
 }
 
-func (bot *Bot) sendPhoto(chatID int64, fileName string, args SendPhotoArgs) {
+func (bot *Bot) SendPhoto(chatID int64, fileName string, args SendPhotoArgs) {
 	sendPhotoFromFile(bot.Token, chatID, fileName, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
 }
 
-func (bot *Bot) sendPhotoBytes(chatID int64, photoBytes []byte, args SendPhotoArgs) {
+func (bot *Bot) SendPhotoBytes(chatID int64, photoBytes []byte, args SendPhotoArgs) {
 	sendPhotoFromBytes(bot.Token, chatID, photoBytes, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
 }
 
-func (bot *Bot) sendDocument(chatID int64, fileName string, args SendDocumentArgs) {
+func (bot *Bot) SendDocument(chatID int64, fileName string, args SendDocumentArgs) {
 	sendDocumentFromFile(bot.Token, chatID, fileName, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
 }
 
-func (bot *Bot) sendDocumentBytes(chatID int64, fileBytes []byte, args SendDocumentArgs) {
+func (bot *Bot) SendDocumentBytes(chatID int64, fileBytes []byte, args SendDocumentArgs) {
 	sendDocumentFromBytes(bot.Token, chatID, fileBytes, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
 }

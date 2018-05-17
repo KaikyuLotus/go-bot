@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func readFileBytes(fileName string) []byte {
+func ReadFileBytes(fileName string) []byte {
 	b, err := ioutil.ReadFile(fileName) // just pass the file name
 	if err != nil {
 		fmt.Print(err)
@@ -13,6 +13,6 @@ func readFileBytes(fileName string) []byte {
 	return b
 }
 
-func readFileString(fileName string) string {
-	return string(readFileBytes(fileName))
+func ReadFileString(fileName string) string {
+	return string(ReadFileBytes(fileName))
 }

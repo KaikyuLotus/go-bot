@@ -77,7 +77,7 @@ func setChatTitle(botToken string, chatID int64, title string){
 }
 
 func sendPhotoFromFile(botToken string, chatID int64, fileName string, caption string, parseMode int, disableNotification bool, replyToMessageId int){
-	sendPhotoFromBytes(botToken, chatID, readFileBytes(fileName), caption, parseMode, disableNotification, replyToMessageId)
+	sendPhotoFromBytes(botToken, chatID, ReadFileBytes(fileName), caption, parseMode, disableNotification, replyToMessageId)
 }
 
 func sendPhotoFromBytes(botToken string, chatID int64, fileBytes []byte, caption string, parseMode int, disableNotification bool, replyToMessageId int){
@@ -90,7 +90,7 @@ func sendPhotoFromBytes(botToken string, chatID int64, fileBytes []byte, caption
 }
 
 func sendDocumentFromFile(botToken string, chatID int64, fileName string, caption string, parseMode int, disableNotification bool, replyToMessageId int){
-	sendDocumentFromBytes(botToken, chatID, readFileBytes(fileName), caption, parseMode, disableNotification, replyToMessageId)
+	sendDocumentFromBytes(botToken, chatID, ReadFileBytes(fileName), caption, parseMode, disableNotification, replyToMessageId)
 }
 
 func sendDocumentFromBytes(botToken string, chatID int64, fileBytes []byte, caption string, parseMode int, disableNotification bool, replyToMessageId int){
