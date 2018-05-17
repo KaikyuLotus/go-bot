@@ -1,92 +1,76 @@
 package gobot
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
+var baseUrl = "https://api.telegram.org/"
 
-// These function are working placeholders. i'll improve them in future
-func assemblyParseMode(mode int) string {
+func getParseMode(mode int) string {
 	if mode != None {
 		if mode == HTML {
-			return "&parse_mode=html"
+			return "html"
 		} else if mode == Markdown {
-			return "&parse_mode=markdown"
+			return "markdown"
 		}
 	}
-
 	return ""
 }
 
-func assemblyReplyToId(messageID int) string {
-	if messageID != 0 {
-		return fmt.Sprintf("&reply_to_message_id=%d", messageID)
-	} else {
-		return ""
-	}
-}
-
-func assemblyBool(paramName string, pbool bool) string {
-	if pbool {
-		return "&" + paramName + "=true"
-	} else {
-		return ""
-	}
-}
-
-func assemblyCaption(caption string) string {
-	if caption != "" {
-		return "&caption=" + caption
-	} else {
-		return ""
-	}
-}
-
-
 func getMe(botToken string) (GetMeResult, bool) {
 	var getMeResult = GetMeResult{}
-	response, status := makeRequest(fmt.Sprintf("%sbot%s/getMe", baseUrl, botToken))
+	response, status := makeRequest(baseUrl + "bot" + botToken +"/getMe", make(map[string]string))
 	return getMeResult, statusCheck(&getMeResult, response, status)
 }
 
 func getUpdates(botToken string, offset int64, timeout bool) (GetUpdateResult, bool){
 	var update = GetUpdateResult{}
-	response, status := makeTimeoutRequest(fmt.Sprintf("%sbot%s/getUpdates?timeout=%d&offset=%d", baseUrl, botToken, 120, offset), timeout)
+	kwargs := make(map[string]string)
+	kwargs["timeout"] = "120"
+	kwargs["offset"] = strconv.Itoa(int(offset))
+	response, status := makeTimeoutRequest(baseUrl + "bot" + botToken + "/getUpdates", kwargs, timeout)
 	return update, statusCheck(&update, response, status)
 }
 
 func sendChatAction(botToken string, chatID int64, action string) (BooleanResult, bool) {
 	var booleanResult = BooleanResult{}
-	resp, status := makeRequest(fmt.Sprintf("%sbot%s/sendChatAction?chat_id=%d&action=%s", baseUrl, botToken, chatID, action))
+	kwargs := make(map[string]string)
+	kwargs["action"] = action
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	resp, status := makeRequest(baseUrl + "bot" + botToken + "/sendChatAction", kwargs)
 	return booleanResult, statusCheck(&booleanResult, resp, status)
 }
 
 func sendMessage(botToken string, chatID int64, text string, parseMode int, disableWebPagePreview bool, disableNotification bool, replyToMessageId int) (SendMessageResult, bool) {
 	var sendMessageResult = SendMessageResult{}
 	// Working placeholder
-	url := fmt.Sprintf("%sbot%s/sendMessage?chat_id=%d&text=%s", baseUrl, botToken, chatID, text)
-	url += assemblyBool("disable_web_page_preview", disableWebPagePreview)
-	url += assemblyBool("disable_notification", disableNotification)
-	url += assemblyParseMode(parseMode)
-	url += assemblyReplyToId(replyToMessageId)
-	resp, status := makeRequest(url)
+	kwargs := make(map[string]string)
+	kwargs["disable_notification"] = strconv.FormatBool(disableNotification)
+	kwargs["disable_web_page_preview"] = strconv.FormatBool(disableWebPagePreview)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["text"] = text
+	kwargs["parse_mode"] = getParseMode(parseMode)
+	kwargs["reply_to_message_id"] = strconv.Itoa(replyToMessageId)
+	resp, status := makeRequest(baseUrl + "bot" + botToken + "/sendMessage", kwargs)
 	return sendMessageResult, statusCheck(&sendMessageResult, resp, status)
 }
 
 func setChatTitle(botToken string, chatID int64, title string){
-	url := fmt.Sprintf("%sbot%s/setChatTitle?chat_id=%d&title=%s", baseUrl, botToken, chatID, title)
-	makeRequest(url)
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["title"] = title
+	makeRequest(baseUrl + "bot" + botToken + "/setChatTitle", kwargs)
 }
 
 func sendPhotoFromFile(botToken string, chatID int64, fileName string, caption string, parseMode int, disableNotification bool, replyToMessageId int){
 	sendPhotoFromBytes(botToken, chatID, ReadFileBytes(fileName), caption, parseMode, disableNotification, replyToMessageId)
 }
 
+// ToDo: Fix POST url composition
 func sendPhotoFromBytes(botToken string, chatID int64, fileBytes []byte, caption string, parseMode int, disableNotification bool, replyToMessageId int){
 	url := fmt.Sprintf("%sbot%s/sendPhoto?chat_id=%d", baseUrl, botToken, chatID)
-	url += assemblyCaption(caption)
-	url += assemblyParseMode(parseMode)
-	url += assemblyReplyToId(replyToMessageId)
-	url += assemblyBool("disable_notification", disableNotification)
-	makePost(url, "photo", fileBytes)
+	makePost(url, "photo", fileBytes) // later
 }
 
 func sendDocumentFromFile(botToken string, chatID int64, fileName string, caption string, parseMode int, disableNotification bool, replyToMessageId int){
@@ -95,9 +79,5 @@ func sendDocumentFromFile(botToken string, chatID int64, fileName string, captio
 
 func sendDocumentFromBytes(botToken string, chatID int64, fileBytes []byte, caption string, parseMode int, disableNotification bool, replyToMessageId int){
 	url := fmt.Sprintf("%sbot%s/sendDocument?chat_id=%d", baseUrl, botToken, chatID)
-	url += assemblyCaption(caption)
-	url += assemblyParseMode(parseMode)
-	url += assemblyReplyToId(replyToMessageId)
-	url += assemblyBool("disable_notification", disableNotification)
-	makePost(url, "document", fileBytes)
+	makePost(url, "document", fileBytes) // later
 }

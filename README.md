@@ -1,6 +1,6 @@
 # GoBot
 
-**This is just a small training project and it's not intended for everyday use.**<br>
+**This is just a small training project and it's not intended for everyday use, not yet.**<br>
 Please feel free to give me some tips.<br>
 This is my first Go project.<br>
 
@@ -13,48 +13,55 @@ package main
 import . "github.com/kaikyudev/gobot"
 
 
-func main(){
-	// Create our bot
-	var bot = NewBot("TOKEN")
+func main() {
+    // instantiate our bot with out custom costructor
+    var bot = NewBot("TOKEN")
 
-	// Add a /command handler function
-	bot.AddCommandHandler("start", start)
+    // Add our funcion in response to /start
+    bot.addCommandHandler("start", start)
 
-	// Start getting updates, this is a blocking function
-	bot.StartPolling(false)
+    // Start getting updates
+    bot.startPolling(true)
+
+    // Wait while our bot runs
+    bot.Idle()
 }
 
-// sendMessage example
-func start(bot Bot, update Update) {
-	msgID := update.Message.MessageID
-	chatID := update.Message.Chat.ID
-	bot.SendChatAction(update.Message.Chat.ID, Typing)
-	                                           // Use SendMessageArgs{} to pass only what you need
-	bot.SendMessage(chatID, "*Markdown*", SendMessageArgs{ReplyToMessageID:msgID, ParseMode:Markdown})
-}
+func start(bot *Bot, update Update) {
+    msgID := update.Message.MessageID
+    chatID := update.Message.Chat.ID
+
+    // Typing...
+    bot.SendChatAction(update.Message.Chat.ID, Typing)
+
+    // With SendMessageArgs{} you can pass extra args for sendMessage method
+    bot.SendMessage(chatID, "*Markdown*", SendMessageArgs{ReplyToMessageID:msgID, ParseMode:Markdown})
+} // That's it!
 ```
 
 ### Getting Updates
 ```go
 package main
 
-import . "github.com/kaikyudev/gobot"
+import (
+    . "github.com/kaikyudev/gobot"
+    "log"
+)
 
 
-func main(){
-	// Create our bot
-	var bot = NewBot("TOKEN")
+func main() {
+    var bot = NewBot("TOKEN")
 
-	// Set the update handler function
-	bot.SetUpdateHandler(updateHandler)
+    // Add our funcion in response to any update
+    bot.setUpdateHandler(updateHandler)
 
-	// Start getting updates, this is a blocking function
-	bot.StartPolling(false)
+    bot.startPolling(true)
+    bot.Idle()
 }
 
-// Here our updates will land
-func updateHandler(bot Bot, update Update) {
-	println("Update ID: ", update.UpdateID)
+func updateHandler(bot *Bot, update Update) {
+    // Log every update
+    log.Printf("[%s] %s", update.Message.From.Username, update.Message.Text)
 }
 ```
 
@@ -62,8 +69,8 @@ func updateHandler(bot Bot, update Update) {
 ## What is working
 
 * Basic API requests
-* Methods: getMe, sendMessage, sendPhoto, sendDocument, sendChatAction [more to come...]
+* Methods: getMe, sendMessage, sendChatAction, sendPhoto, sendDocument [more to come...]
+* Getting updates
 * Commands handling
-* Getting Updates
 
 Not much more...

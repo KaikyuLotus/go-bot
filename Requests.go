@@ -7,12 +7,11 @@ import (
 	"time"
 	"bytes"
 	"mime/multipart"
+	"net/url"
 )
 
 
 var client = &http.Client{}
-
-var baseUrl = "https://api.telegram.org/"
 
 func statusCheck(result interface{}, resp *http.Response, status int) bool {
 	var old = &result
@@ -40,16 +39,24 @@ func statusCheck(result interface{}, resp *http.Response, status int) bool {
 	} else {
 		return false
 	}
-
-
 }
 
-func makeTimeoutRequest(url string, timeout bool) (*http.Response, int) {
-	// safePhone := url.QueryEscape(phone)
+func makeTimeoutRequest(urll string, kwargs map[string]string, timeout bool) (*http.Response, int) {
 	// Build the request
-	req, err := http.NewRequest("GET", url, nil)
+	u, _ := url.Parse(urll)
+	q := u.Query()
+	for key, value := range kwargs {
+		if value == "" {
+			continue
+		}
+		q.Add(key, value)
+	}
+
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		fmt.Printf("Error in the URL '%s'", url)
+		fmt.Printf("Error in the URL '%s'", u.String())
 		fmt.Println(err)
 		return nil, ResponseError
 	}
@@ -77,8 +84,8 @@ func makeTimeoutRequest(url string, timeout bool) (*http.Response, int) {
 	return resp, RequestOk
 }
 
-func makeRequest(url string) (*http.Response, int) {
-	return makeTimeoutRequest(url, false)
+func makeRequest(url string, kwargs map[string]string) (*http.Response, int) {
+	return makeTimeoutRequest(url, kwargs,false)
 }
 
 func makePost(url string, fileType string, content []byte) (*http.Response, int) {

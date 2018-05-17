@@ -29,6 +29,7 @@ type Bot struct {
 	UpdateHandler UpdateHandlerType
 	CommandHandlers []CommandStruct
 	Offset int64
+	Running bool
 }
 
 type CommandStruct struct {
@@ -36,9 +37,9 @@ type CommandStruct struct {
 	Function CommandHandlerType
 }
 
-type UpdateHandlerType func(Bot, Update)
+type UpdateHandlerType func(*Bot, Update)
 
-type CommandHandlerType func(Bot, Update)
+type CommandHandlerType func(*Bot, Update)
 
 
 // Thanks to https://mholt.github.io/json-to-go/

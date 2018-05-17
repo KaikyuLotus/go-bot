@@ -1,10 +1,19 @@
 package gobot
 
-// I need to put return types on every foo in the future
+import (
+	"log"
+	"time"
+)
 
+/*
+I know that Go is not an object-oriented language but i think that this approach is not that bad
+So please don't kill me <3
+*/
+
+// I need to put return types on every foo in the future
 // Bot constructor
 func NewBot(token string) *Bot {
-	bot := &Bot{Token: token}
+	bot := &Bot{Token:token, Running:true}
 	bot.getMe()
 	return bot
 }
@@ -47,19 +56,36 @@ func (bot *Bot) elaborateUpdate(update Update){
 	bot.Offset = update.UpdateID + 1
 	for _, commandStruct := range bot.CommandHandlers {
 		if update.Message.Text ==  "/" + commandStruct.Command {
-			commandStruct.Function(*bot, update)
+			commandStruct.Function(bot, update)
 			return
 		}
 	}
-	bot.UpdateHandler(*bot, update)
+	bot.UpdateHandler(bot, update)
 }
 
-func (bot *Bot) StartPolling(clean bool){
-	for true {
+func (bot *Bot) Stop(){
+	bot.Running = false
+}
+
+func (bot *Bot) pollingFunction(){
+	for bot.Running {
 		updates, _ := getUpdates(bot.Token, bot.Offset, true)
 		for _, update := range updates.Result {
 			bot.elaborateUpdate(update)
 		}
+	}
+	getUpdates(bot.Token, bot.Offset, false) // Clean the last update
+	log.Printf("Bot [@%s] has stopped.", bot.ThisBot.Result.Username)
+}
+
+func (bot *Bot) StartPolling(clean bool){
+	go bot.pollingFunction() // I'll take care of the goroutine later
+}
+
+func (bot *Bot) Idle(){
+	for bot.Running {
+		time.Sleep(time.Second * 1)
+		// Function to wait while the bot executes
 	}
 }
 
