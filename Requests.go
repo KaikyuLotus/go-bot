@@ -8,12 +8,13 @@ import (
 	"bytes"
 	"mime/multipart"
 	"net/url"
+	"net"
 )
 
 
 var client = &http.Client{}
 
-func statusCheck(result interface{}, resp *http.Response, status int) bool {
+func statusCheck(result interface{}, resp *http.Response, status int) int {
 	var old = &result
 	var apiError = ApiError{}
 
@@ -22,7 +23,7 @@ func statusCheck(result interface{}, resp *http.Response, status int) bool {
 			json.NewDecoder(resp.Body).Decode(&apiError)
 			fmt.Println("Excecution failed")
 			fmt.Printf("Telegram has returned error '%s' with status code '%d'.", apiError.Description, apiError.ErrorCode)
-			return false
+			return RequestNotOk
 		} else {
 			json.NewDecoder(resp.Body).Decode(result)
 		}
@@ -32,16 +33,16 @@ func statusCheck(result interface{}, resp *http.Response, status int) bool {
 
 		if result == old {
 			fmt.Println("Excecution failed, network error?")
-			return false
+			return RequestNotOk
 		}
 
-		return true
+		return RequestOk
 	} else {
-		return false
+		return ResponseError
 	}
 }
 
-func makeTimeoutRequest(urll string, kwargs map[string]string, timeout bool) (*http.Response, int) {
+func makeRequest(urll string, kwargs map[string]string) (*http.Response, int) {
 	// Build the request
 	u, _ := url.Parse(urll)
 	q := u.Query()
@@ -61,16 +62,25 @@ func makeTimeoutRequest(urll string, kwargs map[string]string, timeout bool) (*h
 		return nil, ResponseError
 	}
 
-	if timeout {
-		client.Timeout = time.Duration(time.Second * 122)
-	} else {
-		client.Timeout = time.Duration(time.Second * 5)
-	}
+	client.Timeout = time.Duration(time.Second * 122)
 
 	resp, err := client.Do(req)
 	if err != nil {
-		println("Error while requesting...")
-		fmt.Println(err)
+		switch err := err.(type) {
+		case net.Error:
+			if err.Timeout() {
+				fmt.Println("A request has timedout")
+				return nil, TimeoutError
+			}
+		case *url.Error:
+			fmt.Println("This is a *url.Error")
+			if err, ok := err.Err.(net.Error); ok && err.Timeout() {
+				fmt.Println("and it was because of a timeout")
+			}
+		default:
+			println("Error while requesting...")
+			fmt.Println(err)
+		}
 		return nil, ResponseError
 	}
 
@@ -82,10 +92,6 @@ func makeTimeoutRequest(urll string, kwargs map[string]string, timeout bool) (*h
 	}
 
 	return resp, RequestOk
-}
-
-func makeRequest(url string, kwargs map[string]string) (*http.Response, int) {
-	return makeTimeoutRequest(url, kwargs,false)
 }
 
 func makePost(url string, fileType string, content []byte) (*http.Response, int) {

@@ -3,6 +3,7 @@ package gobot
 import (
 	"log"
 	"time"
+	"strings"
 )
 
 /*
@@ -22,52 +23,60 @@ func (bot *Bot) SetUpdateHandler(foo UpdateHandlerType) {
 	bot.UpdateHandler = foo
 }
 
-func (bot *Bot) AddCommandHandler(command string, foo CommandHandlerType){
+func (bot *Bot) SetErrorHandler(foo ErrorHandlerType) {
+	bot.ErrorHandler = foo
+}
+
+func (bot *Bot) AddCommandHandler(command string, foo CommandHandlerType) {
 	bot.CommandHandlers = append(bot.CommandHandlers, CommandStruct{command, foo})
 }
 
+
+
 func (bot *Bot) getMe() GetMeResult {
 	result, getMeOk := getMe(bot.Token)
-	if !getMeOk { panic(getMeOk) } // For now i'll just panic here if unauthorized
+	if getMeOk != RequestOk {
+		panic(getMeOk)
+	} // For now i'll just panic here if unauthorized
 	bot.ThisBot = result
 	return result
 }
 
 // First parameter is offset and second is timeout
-func (bot *Bot) getUpdates(values ...int64) (GetUpdateResult, bool) {
-	updates := GetUpdateResult{}
-	argCount := len(values)
-	if argCount > 1 {
-		return updates, false
-	}
-
-	var offset int64 = 0
-
-	if argCount != 0 {
-		if argCount == 1 {
-			offset = values[0]
-		}
-	}
-
-	return getUpdates(bot.Token, offset, true)
+func (bot *Bot) getUpdates(offset int64, timeout bool) (GetUpdateResult, int) {
+	return getUpdates(bot.Token, offset, timeout)
 }
 
 func (bot *Bot) elaborateUpdate(update Update){
+	defer func() {
+		// recover from panic if one occured. Set err to nil otherwise.
+		if recover() != nil {
+			log.Printf("gobot has recovered from a panic caused from the last handler.")
+			if bot.ErrorHandler != nil {
+				bot.ErrorHandler(bot, update, "error message dummy")
+			}
+		}
+	}()
+
 	bot.Offset = update.UpdateID + 1
 	for _, commandStruct := range bot.CommandHandlers {
-		if update.Message.Text ==  "/" + commandStruct.Command {
+		if strings.ToLower(update.Message.Text) ==  "/" + strings.ToLower(commandStruct.Command) {
 			commandStruct.Function(bot, update)
 			return
 		}
 	}
+	// Fix for issue #1
+	if bot.UpdateHandler == nil {
+		return
+	}
 	bot.UpdateHandler(bot, update)
 }
 
-func (bot *Bot) Stop(){
+func (bot *Bot) Stop() {
 	bot.Running = false
 }
 
-func (bot *Bot) pollingFunction(){
+func (bot *Bot) pollingFunction() {
 	for bot.Running {
 		updates, _ := getUpdates(bot.Token, bot.Offset, true)
 		for _, update := range updates.Result {
@@ -78,26 +87,48 @@ func (bot *Bot) pollingFunction(){
 	log.Printf("Bot [@%s] has stopped.", bot.ThisBot.Result.Username)
 }
 
-func (bot *Bot) StartPolling(clean bool){
+func cleanUpdates(bot *Bot){
+	bot.Offset = -1
+	for true {
+		updates, err := bot.getUpdates(bot.Offset, false)
+		if err == TimeoutError {
+			return
+		}
+		updateCount := len(updates.Result)
+		if updateCount == 0 {
+			return
+		} else {
+			bot.Offset = updates.Result[updateCount - 1].UpdateID + 1
+			log.Printf("Cleaned to update #%d", bot.Offset)
+		}
+	}
+}
+
+func (bot *Bot) StartPolling(clean bool) {
+	if clean {
+		cleanUpdates(bot)
+		log.Println("Updates cleaned!")
+	}
+
 	go bot.pollingFunction() // I'll take care of the goroutine later
 }
 
-func (bot *Bot) Idle(){
+func (bot *Bot) Idle() {
 	for bot.Running {
 		time.Sleep(time.Second * 1)
 		// Function to wait while the bot executes
 	}
 }
 
-func (bot *Bot) SendMessage(chatID int64, text string, args SendMessageArgs) (SendMessageResult, bool) {
+func (bot *Bot) SendMessage(chatID int64, text string, args SendMessageArgs) (SendMessageResult, int) {
 	return sendMessage(bot.Token, chatID, text, args.ParseMode, args.DisableNotification, args.DisableNotification, args.ReplyToMessageID)
 }
 
-func (bot *Bot) SetChatTitle(chatID int64, title string){
+func (bot *Bot) SetChatTitle(chatID int64, title string) {
 	setChatTitle(bot.Token, chatID, title)
 }
 
-func (bot *Bot) SendChatAction(chatID int64, action string) (BooleanResult, bool) {
+func (bot *Bot) SendChatAction(chatID int64, action string) (BooleanResult, int) {
 	return sendChatAction(bot.Token, chatID, action)
 }
 

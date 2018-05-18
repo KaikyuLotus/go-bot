@@ -18,22 +18,24 @@ func getParseMode(mode int) string {
 	return ""
 }
 
-func getMe(botToken string) (GetMeResult, bool) {
+func getMe(botToken string) (GetMeResult, int) {
 	var getMeResult = GetMeResult{}
 	response, status := makeRequest(baseUrl + "bot" + botToken +"/getMe", make(map[string]string))
 	return getMeResult, statusCheck(&getMeResult, response, status)
 }
 
-func getUpdates(botToken string, offset int64, timeout bool) (GetUpdateResult, bool){
+func getUpdates(botToken string, offset int64, timeout bool) (GetUpdateResult, int){
 	var update = GetUpdateResult{}
 	kwargs := make(map[string]string)
-	kwargs["timeout"] = "120"
+	if timeout {
+		kwargs["timeout"] = "120"
+	}
 	kwargs["offset"] = strconv.Itoa(int(offset))
-	response, status := makeTimeoutRequest(baseUrl + "bot" + botToken + "/getUpdates", kwargs, timeout)
+	response, status := makeRequest(baseUrl + "bot" + botToken + "/getUpdates", kwargs)
 	return update, statusCheck(&update, response, status)
 }
 
-func sendChatAction(botToken string, chatID int64, action string) (BooleanResult, bool) {
+func sendChatAction(botToken string, chatID int64, action string) (BooleanResult, int) {
 	var booleanResult = BooleanResult{}
 	kwargs := make(map[string]string)
 	kwargs["action"] = action
@@ -42,7 +44,7 @@ func sendChatAction(botToken string, chatID int64, action string) (BooleanResult
 	return booleanResult, statusCheck(&booleanResult, resp, status)
 }
 
-func sendMessage(botToken string, chatID int64, text string, parseMode int, disableWebPagePreview bool, disableNotification bool, replyToMessageId int) (SendMessageResult, bool) {
+func sendMessage(botToken string, chatID int64, text string, parseMode int, disableWebPagePreview bool, disableNotification bool, replyToMessageId int) (SendMessageResult, int) {
 	var sendMessageResult = SendMessageResult{}
 	// Working placeholder
 	kwargs := make(map[string]string)

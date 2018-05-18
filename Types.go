@@ -19,6 +19,7 @@ const (
 	RequestNotOk
 	RequestOk
 	WrongRequest
+	TimeoutError
 )
 
 
@@ -28,6 +29,7 @@ type Bot struct {
 	Token string
 	UpdateHandler UpdateHandlerType
 	CommandHandlers []CommandStruct
+	ErrorHandler ErrorHandlerType
 	Offset int64
 	Running bool
 }
@@ -40,6 +42,8 @@ type CommandStruct struct {
 type UpdateHandlerType func(*Bot, Update)
 
 type CommandHandlerType func(*Bot, Update)
+
+type ErrorHandlerType func(*Bot, Update, string)
 
 
 // Thanks to https://mholt.github.io/json-to-go/
