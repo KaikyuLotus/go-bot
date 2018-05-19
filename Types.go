@@ -1,5 +1,7 @@
 package gobot
 
+import "net/http"
+
 // enums
 const (
 	None = iota
@@ -20,22 +22,22 @@ const (
 	RequestOk
 	WrongRequest
 	TimeoutError
+	StatusNot200
+	Unauthorized
 )
 
 
-// Bot types
-type Bot struct {
-	ThisBot GetMeResult
-	Token string
-	UpdateHandler UpdateHandlerType
-	CommandHandlers []CommandStruct
-	ErrorHandler ErrorHandlerType
-	Offset int64
-	Running bool
+type RequestsError struct {
+	Enum	int
+	Url  	string
+	Cause 	string
+	Args 	map[string]string
+	Response *http.Response
 }
 
+
 type CommandStruct struct {
-	Command string
+	Command	 string
 	Function CommandHandlerType
 }
 
@@ -43,89 +45,92 @@ type UpdateHandlerType func(*Bot, Update)
 
 type CommandHandlerType func(*Bot, Update)
 
-type ErrorHandlerType func(*Bot, Update, string)
-
+type PanicHandlerType func(*Bot, Update, interface{})
 
 // Thanks to https://mholt.github.io/json-to-go/
-// JSON structs
+type Thumb   struct {
+	FileID   string `json:"file_id"`
+	FileSize int    `json:"file_size"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
+}
+
+type Sticker struct {
+	Width   int    	`json:"width"`
+	Height  int    	`json:"height"`
+	Emoji   string 	`json:"emoji"`
+	SetName string 	`json:"set_name"`
+	Thumb Thumb		`json:"thumb"`
+	FileID   string `json:"file_id"`
+	FileSize int    `json:"file_size"`
+}
+
+type From      struct {
+	ID           int    `json:"id"`
+	IsBot        bool   `json:"is_bot"`
+	FirstName    string `json:"first_name"`
+	Username     string `json:"username"`
+	LanguageCode string `json:"language_code"`
+}
+
+type Bot      struct {
+	ID           	int    `json:"id"`
+	IsBot        	bool   `json:"is_bot"`
+	FirstName    	string `json:"first_name"`
+	Username     	string `json:"username"`
+	token 			string
+	authorized		bool
+	UpdateHandler 	UpdateHandlerType
+	CommandHandlers []CommandStruct
+	ErrorHandler 	PanicHandlerType
+	Offset 			int64
+	Running 		bool
+}
+
+type Chat struct {
+	ID        int64		`json:"id"`
+	FirstName string 	`json:"first_name"`
+	Username  string 	`json:"username"`
+	Type      string 	`json:"type"`
+}
+
+type Message  struct {
+	MessageID int	`json:"message_id"`
+	Text string		`json:"text"`
+	From From 		`json:"from"`
+	Chat Chat 		`json:"chat"`
+	Date    int 	`json:"date"`
+	Sticker Sticker `json:"sticker"`
+	Args []string
+}
+
 type Update struct {
-	UpdateID int64 `json:"update_id"`
-	Message struct {
-		MessageID int `json:"message_id"`
-		From struct {
-			ID           int    `json:"id"`
-			IsBot        bool   `json:"is_bot"`
-			FirstName    string `json:"first_name"`
-			LastName     string `json:"last_name"`
-			Username     string `json:"username"`
-			LanguageCode string `json:"language_code"`
-		} `json:"from"`
-		Chat struct {
-			ID    int64  `json:"id"`
-			Title string `json:"title"`
-			Type  string `json:"type"`
-		} `json:"chat"`
-		Date int `json:"date"`
-		ReplyToMessage struct {
-			MessageID int `json:"message_id"`
-			From struct {
-				ID           int    `json:"id"`
-				IsBot        bool   `json:"is_bot"`
-				FirstName    string `json:"first_name"`
-				Username     string `json:"username"`
-				LanguageCode string `json:"language_code"`
-			} `json:"from"`
-			Chat struct {
-				ID    int64  `json:"id"`
-				Title string `json:"title"`
-				Type  string `json:"type"`
-			} `json:"chat"`
-			Date int    `json:"date"`
-			Text string `json:"text"`
-		} `json:"reply_to_message"`
-		Text string `json:"text"`
-	} `json:"message"`
+	UpdateID 	int64 	`json:"update_id"`
+	Message		Message `json:"message"`
 }
 
 type GetUpdateResult struct {
-	Ok     bool `json:"ok"`
-	Result []Update `json:"result"`
+	Ok     bool		`json:"ok"`
+	Result []Update	`json:"result"`
 }
 
 type SendMessageResult struct {
 	Ok     bool `json:"ok"`
-	Result struct {
-		MessageID int `json:"message_id"`
-		From      struct {
-			ID        int    `json:"id"`
-			IsBot     bool   `json:"is_bot"`
-			FirstName string `json:"first_name"`
-			Username  string `json:"username"`
-		} `json:"from"`
-		Chat struct {
-			ID        int    `json:"id"`
-			FirstName string `json:"first_name"`
-			Username  string `json:"username"`
-			Type      string `json:"type"`
-		} `json:"chat"`
-		Date int    `json:"date"`
-		Text string `json:"text"`
-	} `json:"result"`
+	Message Message `json:"result"`
 }
 
 type GetMeResult struct {
-	Ok     bool `json:"ok"`
-	Result struct {
-		ID        int    `json:"id"`
-		IsBot     bool   `json:"is_bot"`
-		FirstName string `json:"first_name"`
-		Username  string `json:"username"`
-	} `json:"result"`
+	Ok		bool	`json:"ok"`
+	Bot		Bot	`json:"result"`
 }
 
 type BooleanResult struct {
 	Ok     bool `json:"ok"`
 	Result bool `json:"result"`
+}
+
+type SendStickerResult struct {
+
 }
 
 type ApiError struct {
@@ -135,22 +140,27 @@ type ApiError struct {
 }
 
 type SendMessageArgs struct {
-	ReplyToMessageID int
-	ParseMode int
-	DisableWebPagePreview bool
-	DisableNotification bool
+	ReplyToMessageID 		int
+	ParseMode 				int
+	DisableWebPagePreview	bool
+	DisableNotification 	bool
 }
 
 type SendPhotoArgs struct {
-	Caption string
-	ParseMode int
-	ReplyToMessageID int
+	Caption				string
+	ParseMode			int
+	ReplyToMessageID	int
 	DisableNotification bool
 }
 
 type SendDocumentArgs struct {
 	Caption string
 	ParseMode int
+	ReplyToMessageID int
+	DisableNotification bool
+}
+
+type SendStickerArgs struct {
 	ReplyToMessageID int
 	DisableNotification bool
 }

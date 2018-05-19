@@ -2,19 +2,18 @@ package gobot
 
 import (
 	"net/http"
-	"encoding/json"
+	"net/url"
 	"fmt"
 	"time"
+	"net"
 	"bytes"
 	"mime/multipart"
-	"net/url"
-	"net"
 )
 
 
 var client = &http.Client{}
 
-func statusCheck(result interface{}, resp *http.Response, status int) int {
+/*func statusCheck(result interface{}, resp *http.Response, status int) int {
 	var old = &result
 	var apiError = ApiError{}
 
@@ -40,9 +39,9 @@ func statusCheck(result interface{}, resp *http.Response, status int) int {
 	} else {
 		return ResponseError
 	}
-}
+}*/
 
-func makeRequest(urll string, kwargs map[string]string) (*http.Response, int) {
+func makeRequest(urll string, kwargs map[string]string) (*http.Response, *RequestsError) {
 	// Build the request
 	u, _ := url.Parse(urll)
 	q := u.Query()
@@ -57,9 +56,7 @@ func makeRequest(urll string, kwargs map[string]string) (*http.Response, int) {
 
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		fmt.Printf("Error in the URL '%s'", u.String())
-		fmt.Println(err)
-		return nil, ResponseError
+		return nil, &RequestsError{Enum:RequestNotOk, Args:kwargs, Url:urll, Cause:fmt.Sprintf("Error in the URL '%s'", u.String())}
 	}
 
 	client.Timeout = time.Duration(time.Second * 122)
@@ -69,31 +66,33 @@ func makeRequest(urll string, kwargs map[string]string) (*http.Response, int) {
 		switch err := err.(type) {
 		case net.Error:
 			if err.Timeout() {
-				fmt.Println("A request has timedout")
-				return nil, TimeoutError
+				return nil, &RequestsError{Enum:TimeoutError, Args:kwargs, Url:urll, Cause:fmt.Sprintf("Timeout exceeded (%s)", err)}
 			}
 		case *url.Error:
-			fmt.Println("This is a *url.Error")
 			if err, ok := err.Err.(net.Error); ok && err.Timeout() {
-				fmt.Println("and it was because of a timeout")
+				return nil, &RequestsError{Enum:TimeoutError, Args:kwargs, Url:urll, Cause:fmt.Sprintf("Timeout exceeded (%s)", err)}
 			}
-		default:
-			println("Error while requesting...")
-			fmt.Println(err)
 		}
-		return nil, ResponseError
+		return nil, &RequestsError{Enum:ResponseError, Args:kwargs, Url:urll, Cause:fmt.Sprintf("Request failed due to an unknown error: %s", err.Error())}
 	}
 
 	if resp.StatusCode != 200 {
-		fmt.Println("Status code not 200.")
-		// body, _ := ioutil.ReadAll(resp.Body)
-		// result := string(body)
-		return resp, RequestNotOk
+		if resp.StatusCode == 401 {
+			return resp, &RequestsError{Enum:Unauthorized, Args:kwargs, Url:urll, Cause:fmt.Sprintf("Unauthorized (%d)", resp.StatusCode), Response:resp}
+		} else {
+			return resp, &RequestsError{Enum:StatusNot200, Args:kwargs, Url:urll, Cause:fmt.Sprintf("Status Code not 200: %d", resp.StatusCode), Response:resp}
+		}
+
 	}
 
-	return resp, RequestOk
+	/* body, _ := ioutil.ReadAll(resp.Body)
+	result := string(body)
+	println(result) */
+
+	return resp, nil
 }
 
+// ToDo: Improve POST function with custom args and fix error return
 func makePost(url string, fileType string, content []byte) (*http.Response, int) {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
