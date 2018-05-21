@@ -14,7 +14,7 @@ So please don't kill me <3
 // I need to put return types on every foo in the future
 // Bot constructor
 func NewBot(token string) (*Bot, *RequestsError) {
-	bot := &Bot{token:token, Running:true}
+	bot := &Bot{token: token, Running: true}
 	_, err := bot.getMe()
 	if err != nil {
 		return &Bot{}, err
@@ -57,7 +57,7 @@ func (bot *Bot) getUpdates(offset int64, timeout bool) (GetUpdateResult, *Reques
 	return updates, nil
 }
 
-func (bot *Bot) elaborateUpdate(update Update){
+func (bot *Bot) elaborateUpdate(update Update) {
 	if bot.ErrorHandler != nil {
 		defer func() {
 			// recover from panic if one occured. Set err to nil otherwise.
@@ -73,7 +73,7 @@ func (bot *Bot) elaborateUpdate(update Update){
 	bot.Offset = update.UpdateID + 1
 	update.Message.Args = strings.Split(update.Message.Text, " ")
 	for _, commandStruct := range bot.CommandHandlers {
-		if strings.HasPrefix(strings.ToLower(update.Message.Text), "/" + strings.ToLower(commandStruct.Command)) {
+		if strings.HasPrefix(strings.ToLower(update.Message.Text), "/"+strings.ToLower(commandStruct.Command)) {
 			commandStruct.Function(bot, update)
 			return
 		}
@@ -100,7 +100,7 @@ func (bot *Bot) pollingFunction() {
 	log.Printf("Bot [@%s] has stopped.", bot.Username)
 }
 
-func cleanUpdates(bot *Bot){
+func cleanUpdates(bot *Bot) {
 	bot.Offset = -1
 	for true {
 		updates, err := bot.getUpdates(bot.Offset, false)
@@ -113,7 +113,7 @@ func cleanUpdates(bot *Bot){
 		if updateCount == 0 {
 			return
 		} else {
-			bot.Offset = updates.Result[updateCount - 1].UpdateID + 1
+			bot.Offset = updates.Result[updateCount-1].UpdateID + 1
 			log.Printf("Cleaned to update #%d", bot.Offset)
 		}
 	}
@@ -135,6 +135,7 @@ func (bot *Bot) Idle() {
 	}
 }
 
+// Wrappers for RAW functions, maybe i'll join them...
 func (bot *Bot) SendMessage(chatID int64, text string, args SendMessageArgs) (SendMessageResult, *RequestsError) {
 	return sendMessage(bot.token, chatID, text, args.ParseMode, args.DisableNotification, args.DisableNotification, args.ReplyToMessageID)
 }
@@ -147,27 +148,48 @@ func (bot *Bot) SendChatAction(chatID int64, action string) (BooleanResult, *Req
 	return sendChatAction(bot.token, chatID, action)
 }
 
-func (bot *Bot) SendPhoto(chatID int64, fileName string, args SendPhotoArgs) (SendPhotoResult, *RequestsError) {
-	return sendPhotoFromFile(bot.token, chatID, fileName, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
+func (bot *Bot) SendSticker(chatID int64, sticker string, args SendStickerArgs) (SendStickerResult, *RequestsError) {
+	return sendSticker(bot.token, chatID, sticker, args.ReplyToMessageID, args.DisableNotification)
 }
 
-func (bot *Bot) SendPhotoBytes(chatID int64, photoBytes []byte, args SendPhotoArgs) {
-	sendPhotoFromBytes(bot.token, chatID, "photo.jpg", photoBytes, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
+func (bot *Bot) ForwardMessage(chatID int64, fromChatID int64, messageID int, disableNotification bool) (ForwardMessageResult, *RequestsError) {
+	return forwardMessage(bot.token, chatID, fromChatID, messageID, disableNotification)
 }
 
-func (bot *Bot) SendDocument(chatID int64, fileName string, args SendDocumentArgs) {
-	sendDocumentFromFile(bot.token, chatID, fileName, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
+// SendPhoto
+func (bot *Bot) SendPhotoBytes(chatID int64, fileName string, photoBytes []byte, args SendPhotoArgs) (SendPhotoResult, *RequestsError) {
+	return sendPhotoBytes(bot.token, chatID, fileName, photoBytes, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
 }
 
-func (bot *Bot) SendDocumentBytes(chatID int64, fileBytes []byte, args SendDocumentArgs) {
-	sendDocumentFromBytes(bot.token, chatID, "file.name", fileBytes, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
+func (bot *Bot) SendPhoto(chatID int64, fileID string, args SendPhotoArgs) (SendPhotoResult, *RequestsError) {
+	return sendPhotoByID(bot.token, chatID, fileID, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
 }
 
-func (bot *Bot) SendSticker(chatID int64, sticker string, args SendStickerArgs){
-	sendSticker(bot.token, chatID, sticker, args.ReplyToMessageID, args.DisableNotification)
+// SendDocument
+func (bot *Bot) SendDocumentBytes(chatID int64, fileName string, fileBytes []byte, args SendDocumentArgs) (SendDocumentResult, *RequestsError) {
+	return sendDocumentBytes(bot.token, chatID, fileName, fileBytes, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
 }
 
-func (bot *Bot) SendAudioFile(chatID int64, fileName string, args SendAudioArgs) (SendAudioResult, *RequestsError){
-	return sendAudioFromFile(bot.token, chatID, fileName, args.Caption,
-		args.ParseMode, args.Duration, args.Performer, args.Title, args.DisableNotification, args.ReplyToMessageID)
+func (bot *Bot) SendDocument(chatID int64, fileID string, args SendDocumentArgs) (SendDocumentResult, *RequestsError) {
+	return sendDocumentByID(bot.token, chatID, fileID, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
+}
+
+// SendAudio
+func (bot *Bot) SendAudioBytes(chatID int64, fileName string, fileBytes []byte, args SendAudioArgs) (SendAudioResult, *RequestsError) {
+	return sendAudioBytes(bot.token, chatID, fileBytes, fileName, args.Caption, args.ParseMode, args.Duration,
+		args.Performer, args.Title, args.DisableNotification, args.ReplyToMessageID)
+}
+
+func (bot *Bot) SendAudio(chatID int64, fileID string, args SendAudioArgs) (SendAudioResult, *RequestsError) {
+	return sendAudioByID(bot.token, chatID, fileID, args.Caption, args.ParseMode, args.Duration,
+		args.Performer, args.Title, args.DisableNotification, args.ReplyToMessageID)
+}
+
+// SendVoice
+func (bot *Bot) SendVoiceBytes(chatID int64, fileName string, fileBytes []byte, args SendVoiceArgs) (SendVoiceResult, *RequestsError) {
+	return sendVoiceBytes(bot.token, chatID, fileBytes, fileName, args.Caption, args.ParseMode, args.Duration, args.DisableNotification, args.ReplyToMessageID)
+}
+
+func (bot *Bot) SendVoice(chatID int64, fileID string, args SendVoiceArgs) (SendVoiceResult, *RequestsError) {
+	return sendVoiceByID(bot.token, chatID, fileID, args.Caption, args.ParseMode, args.Duration, args.DisableNotification, args.ReplyToMessageID)
 }

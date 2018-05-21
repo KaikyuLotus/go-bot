@@ -2,13 +2,13 @@ package gobot
 
 import (
 	"io/ioutil"
-	"fmt"
+	"log"
 )
 
 func ReadFileBytes(fileName string) []byte {
 	b, err := ioutil.ReadFile(fileName) // just pass the file name
 	if err != nil {
-		fmt.Print(err)
+		log.Println(err)
 	}
 	return b
 }
