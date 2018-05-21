@@ -1,6 +1,6 @@
 package gobot
 
-import "net/http"
+import "io"
 
 // enums
 const (
@@ -14,6 +14,9 @@ const (
 	UploadPhoto = "upload_photo"
 	UploadVideo = "upload_video"
 	UploadDocument = "upload_document"
+	RecordAudio = "record_audio"
+	UploadAudio = "upload_audio"
+	RecordVideo = "record_video"
 )
 
 const (
@@ -24,6 +27,7 @@ const (
 	TimeoutError
 	StatusNot200
 	Unauthorized
+	ArgsError
 )
 
 
@@ -32,7 +36,7 @@ type RequestsError struct {
 	Url  	string
 	Cause 	string
 	Args 	map[string]string
-	Response *http.Response
+	Response io.Reader
 }
 
 
@@ -53,6 +57,38 @@ type Thumb   struct {
 	FileSize int    `json:"file_size"`
 	Width    int    `json:"width"`
 	Height   int    `json:"height"`
+}
+
+type Photo struct {
+	FileID   string `json:"file_id"`
+	FileSize int    `json:"file_size"`
+	Width    int    `json:"width"`
+	Height   int    `json:"height"`
+}
+
+type Audio struct {
+	Duration  int    `json:"duration"`
+	MimeType  string `json:"mime_type"`
+	Title     string `json:"title"`
+	Performer string `json:"performer"`
+	FileID    string `json:"file_id"`
+	FileSize  int    `json:"file_size"`
+}
+
+type Document struct {
+	FileID string 	`json:"file_id"`
+	Thumb  Thumb	`json:"thumb"`
+	FileName string `json:"file_name"`
+	MimeType string `json:"mime_type"`
+	FileSize int    `json:"file_size"`
+}
+
+
+type Voice struct {
+	Duration int    `json:"duration"`
+	MimeType string `json:"mime_type"`
+	FileID   string `json:"file_id"`
+	FileSize int    `json:"file_size"`
 }
 
 type Sticker struct {
@@ -94,14 +130,33 @@ type Chat struct {
 	Type      string 	`json:"type"`
 }
 
+type ReplyToMessage  struct {
+	MessageID 	int			`json:"message_id"`
+	Text 		string		`json:"text"`
+	From 		From 		`json:"from"`
+	Chat 		Chat 		`json:"chat"`
+	Date    	int 		`json:"date"`
+	Sticker 	Sticker	 	`json:"sticker"`
+	Voice		Voice 		`json:"voice"`
+	Audio 		Audio 		`json:"audio"`
+	Document	Document 	`json:"document"`
+	Photo 		[]Photo 	`json:"photo"`
+	Args 		[]string
+}
+
 type Message  struct {
-	MessageID int	`json:"message_id"`
-	Text string		`json:"text"`
-	From From 		`json:"from"`
-	Chat Chat 		`json:"chat"`
-	Date    int 	`json:"date"`
-	Sticker Sticker `json:"sticker"`
-	Args []string
+	ReplyTo 	ReplyToMessage 	`json:"reply_to_message"`
+	MessageID 	int				`json:"message_id"`
+	Text 		string			`json:"text"`
+	From 		From 			`json:"from"`
+	Chat 		Chat 			`json:"chat"`
+	Date    	int 			`json:"date"`
+	Sticker 	Sticker 		`json:"sticker"`
+	Voice		Voice 			`json:"voice"`
+	Audio 		Audio 			`json:"audio"`
+	Document	Document 		`json:"document"`
+	Photo 		[]Photo 		`json:"photo"`
+	Args 		[]string
 }
 
 type Update struct {
@@ -129,7 +184,16 @@ type BooleanResult struct {
 	Result bool `json:"result"`
 }
 
+// ToDo: Complete those types
+type SendAudioResult struct {
+
+}
+
 type SendStickerResult struct {
+
+}
+
+type SendPhotoResult struct {
 
 }
 
@@ -163,4 +227,14 @@ type SendDocumentArgs struct {
 type SendStickerArgs struct {
 	ReplyToMessageID int
 	DisableNotification bool
+}
+
+type SendAudioArgs struct {
+	Caption string
+	ParseMode int
+	Duration int
+	Performer string
+	Title string
+	DisableNotification bool
+	ReplyToMessageID int
 }

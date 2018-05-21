@@ -58,17 +58,18 @@ func (bot *Bot) getUpdates(offset int64, timeout bool) (GetUpdateResult, *Reques
 }
 
 func (bot *Bot) elaborateUpdate(update Update){
-	defer func() {
-		// recover from panic if one occured. Set err to nil otherwise.
-		rec := recover()
-		if rec != nil {
-			log.Printf("gobot has recovered from a panic caused from the last handler.")
-			if bot.ErrorHandler != nil {
-				bot.ErrorHandler(bot, update, rec)
+	if bot.ErrorHandler != nil {
+		defer func() {
+			// recover from panic if one occured. Set err to nil otherwise.
+			rec := recover()
+			if rec != nil {
+				log.Printf("gobot has recovered from a panic caused from the last handler.")
+				if bot.ErrorHandler != nil {
+					bot.ErrorHandler(bot, update, rec)
+				}
 			}
-		}
-	}()
-
+		}()
+	}
 	bot.Offset = update.UpdateID + 1
 	update.Message.Args = strings.Split(update.Message.Text, " ")
 	for _, commandStruct := range bot.CommandHandlers {
@@ -146,12 +147,12 @@ func (bot *Bot) SendChatAction(chatID int64, action string) (BooleanResult, *Req
 	return sendChatAction(bot.token, chatID, action)
 }
 
-func (bot *Bot) SendPhoto(chatID int64, fileName string, args SendPhotoArgs) {
-	sendPhotoFromFile(bot.token, chatID, fileName, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
+func (bot *Bot) SendPhoto(chatID int64, fileName string, args SendPhotoArgs) (SendPhotoResult, *RequestsError) {
+	return sendPhotoFromFile(bot.token, chatID, fileName, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
 }
 
 func (bot *Bot) SendPhotoBytes(chatID int64, photoBytes []byte, args SendPhotoArgs) {
-	sendPhotoFromBytes(bot.token, chatID, photoBytes, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
+	sendPhotoFromBytes(bot.token, chatID, "photo.jpg", photoBytes, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
 }
 
 func (bot *Bot) SendDocument(chatID int64, fileName string, args SendDocumentArgs) {
@@ -159,9 +160,14 @@ func (bot *Bot) SendDocument(chatID int64, fileName string, args SendDocumentArg
 }
 
 func (bot *Bot) SendDocumentBytes(chatID int64, fileBytes []byte, args SendDocumentArgs) {
-	sendDocumentFromBytes(bot.token, chatID, fileBytes, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
+	sendDocumentFromBytes(bot.token, chatID, "file.name", fileBytes, args.Caption, args.ParseMode, args.DisableNotification, args.ReplyToMessageID)
 }
 
 func (bot *Bot) SendSticker(chatID int64, sticker string, args SendStickerArgs){
 	sendSticker(bot.token, chatID, sticker, args.ReplyToMessageID, args.DisableNotification)
+}
+
+func (bot *Bot) SendAudioFile(chatID int64, fileName string, args SendAudioArgs) (SendAudioResult, *RequestsError){
+	return sendAudioFromFile(bot.token, chatID, fileName, args.Caption,
+		args.ParseMode, args.Duration, args.Performer, args.Title, args.DisableNotification, args.ReplyToMessageID)
 }

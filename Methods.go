@@ -1,16 +1,16 @@
 package gobot
 
 import (
-	"fmt"
 	"strconv"
-	"net/http"
 	"encoding/json"
+	"io/ioutil"
+	"io"
 )
 
 var baseUrl = "https://api.telegram.org/"
 
-func toApiResult(resp *http.Response, outStruct interface{}) {
-	json.NewDecoder(resp.Body).Decode(outStruct)
+func toApiResult(resp io.Reader, outStruct interface{}) {
+	json.NewDecoder(resp).Decode(outStruct)
 }
 
 func getParseMode(mode int) string {
@@ -27,7 +27,7 @@ func getParseMode(mode int) string {
 // Returns an empty struct if an error happens and the error, otherwise returns the result and nil
 func getMe(botToken string) (GetMeResult, *RequestsError) {
 	var getMeResult = GetMeResult{}
-	response, err := makeRequest(baseUrl + "bot" + botToken +"/getMe", make(map[string]string))
+	response, err := makeRequest(baseUrl + "bot" + botToken +"/getMe", nil, make(map[string]string))
 	if err != nil {
 		return getMeResult, err
 	}
@@ -42,7 +42,7 @@ func getUpdates(botToken string, offset int64, timeout bool) (GetUpdateResult, *
 		kwargs["timeout"] = "120"
 	}
 	kwargs["offset"] = strconv.Itoa(int(offset))
-	response, err := makeRequest(baseUrl + "bot" + botToken + "/getUpdates", kwargs)
+	response, err := makeRequest(baseUrl + "bot" + botToken + "/getUpdates", nil, kwargs)
 	if err != nil {
 		return updates, err
 	}
@@ -55,7 +55,7 @@ func sendChatAction(botToken string, chatID int64, action string) (BooleanResult
 	kwargs := make(map[string]string)
 	kwargs["action"] = action
 	kwargs["chat_id"] = strconv.Itoa(int(chatID))
-	_, err := makeRequest(baseUrl + "bot" + botToken + "/sendChatAction", kwargs)
+	_, err := makeRequest(baseUrl + "bot" + botToken + "/sendChatAction", nil, kwargs)
 	return booleanResult, err// statusCheck(&booleanResult, resp, status)
 }
 
@@ -68,8 +68,10 @@ func sendMessage(botToken string, chatID int64, text string, parseMode int, disa
 	kwargs["chat_id"] = strconv.Itoa(int(chatID))
 	kwargs["text"] = text
 	kwargs["parse_mode"] = getParseMode(parseMode)
-	kwargs["reply_to_message_id"] = strconv.Itoa(replyToMessageId)
-	result, err := makeRequest(baseUrl + "bot" + botToken + "/sendMessage", kwargs)
+	if replyToMessageId != 0 {
+		kwargs["reply_to_message_id"] = strconv.Itoa(replyToMessageId)
+	}
+	result, err := makeRequest(baseUrl + "bot" + botToken + "/sendMessage", nil, kwargs)
 	if err != nil {
 		return sendMessageResult, err
 	}
@@ -81,35 +83,86 @@ func setChatTitle(botToken string, chatID int64, title string){
 	kwargs := make(map[string]string)
 	kwargs["chat_id"] = strconv.Itoa(int(chatID))
 	kwargs["title"] = title
-	makeRequest(baseUrl + "bot" + botToken + "/setChatTitle", kwargs)
+	makeRequest(baseUrl + "bot" + botToken + "/setChatTitle", nil, kwargs)
 }
 
-func sendPhotoFromFile(botToken string, chatID int64, fileName string, caption string, parseMode int, disableNotification bool, replyToMessageId int){
-	sendPhotoFromBytes(botToken, chatID, ReadFileBytes(fileName), caption, parseMode, disableNotification, replyToMessageId)
+func sendPhotoFromFile(botToken string, chatID int64, fileName string, caption string, parseMode int, disableNotification bool, replyToMessageId int) (SendPhotoResult, *RequestsError){
+	return sendPhotoFromBytes(botToken, chatID, fileName, ReadFileBytes(fileName), caption, parseMode, disableNotification, replyToMessageId)
 }
 
 // ToDo: Fix POST url composition
-func sendPhotoFromBytes(botToken string, chatID int64, fileBytes []byte, caption string, parseMode int, disableNotification bool, replyToMessageId int){
-	url := fmt.Sprintf("%sbot%s/sendPhoto?chat_id=%d", baseUrl, botToken, chatID)
-	makePost(url, "photo", fileBytes) // later
+func sendPhotoFromBytes(botToken string, chatID int64, fileName string, fileBytes []byte, caption string, parseMode int, disableNotification bool, replyToMessageId int) (SendPhotoResult, *RequestsError){
+	// url := fmt.Sprintf("%sbot%s/sendPhoto?chat_id=%d", baseUrl, botToken, chatID)
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["filename"] = fileName
+	kwargs["filetype"] = "photo"
+	kwargs["caption"] = caption
+	kwargs["parse_mode"] = getParseMode(parseMode)
+	if disableNotification {
+		kwargs["disable_notification"] = "true"
+	}
+	if replyToMessageId != 0 {
+		kwargs["reply_to_message_id"] = strconv.Itoa(replyToMessageId)
+	}
+	_, err := makeRequest(baseUrl + "bot" + botToken + "/sendPhoto", &fileBytes, kwargs)
+	return SendPhotoResult{}, err
 }
 
 func sendDocumentFromFile(botToken string, chatID int64, fileName string, caption string, parseMode int, disableNotification bool, replyToMessageId int){
-	sendDocumentFromBytes(botToken, chatID, ReadFileBytes(fileName), caption, parseMode, disableNotification, replyToMessageId)
+	sendDocumentFromBytes(botToken, chatID, fileName, ReadFileBytes(fileName), caption, parseMode, disableNotification, replyToMessageId)
 }
 
-func sendDocumentFromBytes(botToken string, chatID int64, fileBytes []byte, caption string, parseMode int, disableNotification bool, replyToMessageId int){
-	url := fmt.Sprintf("%sbot%s/sendDocument?chat_id=%d", baseUrl, botToken, chatID)
-	makePost(url, "document", fileBytes) // later
+func sendDocumentFromBytes(botToken string, chatID int64, fileName string, fileBytes []byte, caption string, parseMode int, disableNotification bool, replyToMessageId int){
+	// url := fmt.Sprintf("%sbot%s/sendDocument?chat_id=%d", baseUrl, botToken, chatID)
+	// makePost(url, "document", fileName, fileBytes) // later
 }
 
 func sendSticker(botToken string, chatID int64, fileID string, replyToMessageId int, disableNotification bool) (SendStickerResult, *RequestsError) {
 	kwargs := make(map[string]string)
 	kwargs["chat_id"] = strconv.Itoa(int(chatID))
 	kwargs["sticker"] = fileID
-	kwargs["disable_notification"] = strconv.FormatBool(disableNotification)
-	kwargs["reply_to_message_id"] = strconv.Itoa(replyToMessageId)
-	makeRequest(baseUrl + "bot" + botToken + "/sendSticker", kwargs)
+	if disableNotification {
+		kwargs["disable_notification"] = "true"
+	}
+	if replyToMessageId != 0 {
+		kwargs["reply_to_message_id"] = strconv.Itoa(replyToMessageId)
+	}
+	makeRequest(baseUrl + "bot" + botToken + "/sendSticker", nil, kwargs)
 	return SendStickerResult{}, nil
+}
 
+func sendAudioFromBytes(botToken string, chatID int64, fileBytes []byte, fileName string, caption string, parseMode int,
+						duration int, performer string, title string, disableNotification bool, replyToMessageId int) (SendAudioResult, *RequestsError) {
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["filename"] = fileName
+	kwargs["filetype"] = "audio"
+	kwargs["caption"] = caption
+	kwargs["parse_mode"] = getParseMode(parseMode)
+	kwargs["performer"] = performer
+	kwargs["title"] = title
+	if disableNotification {
+		kwargs["disable_notification"] = "true"
+	}
+	if replyToMessageId != 0 {
+		kwargs["reply_to_message_id"] = strconv.Itoa(replyToMessageId)
+	}
+	if duration != 0 {
+		kwargs["duration"] = strconv.Itoa(duration)
+	}
+	res, err := makeRequest(baseUrl + "bot" + botToken + "/sendAudio", &fileBytes, kwargs)
+	if err != nil {
+		println(err.Cause)
+		body, _ := ioutil.ReadAll(res)
+		result 		:= string(body)
+		println(result)
+	}
+
+	return SendAudioResult{}, err
+}
+
+func sendAudioFromFile(botToken string, chatID int64, fileName string, caption string, parseMode int, duration int,
+	performer string, title string, disableNotification bool, replyToMessageId int) (SendAudioResult, *RequestsError){
+	return sendAudioFromBytes(botToken, chatID, ReadFileBytes(fileName), fileName, caption, parseMode, duration, performer, title, disableNotification, replyToMessageId)
 }
