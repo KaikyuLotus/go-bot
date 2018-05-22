@@ -27,6 +27,10 @@ func (bot *Bot) SetUpdateHandler(foo UpdateHandlerType) {
 	bot.UpdateHandler = foo
 }
 
+func (bot *Bot) SetCallbackQueryHandler(foo CallbackHandlerType) {
+	bot.CallbackQueryHandler = foo
+}
+
 func (bot *Bot) SetPanicHandler(foo PanicHandlerType) {
 	bot.ErrorHandler = foo
 }
@@ -58,6 +62,13 @@ func (bot *Bot) getUpdates(offset int64, timeout bool) (GetUpdateResult, *Reques
 }
 
 func (bot *Bot) elaborateUpdate(update Update) {
+	var uType string
+	if update.Message.MessageID != 0 {
+		uType = "message"
+	} else if update.CallbackQuery.ID != "" {
+		uType = "callback_query"
+	}
+
 	if bot.ErrorHandler != nil {
 		defer func() {
 			// recover from panic if one occured. Set err to nil otherwise.
@@ -71,18 +82,35 @@ func (bot *Bot) elaborateUpdate(update Update) {
 		}()
 	}
 	bot.Offset = update.UpdateID + 1
-	update.Message.Args = strings.Split(update.Message.Text, " ")
-	for _, commandStruct := range bot.CommandHandlers {
-		if strings.HasPrefix(strings.ToLower(update.Message.Text), "/"+strings.ToLower(commandStruct.Command)) {
-			commandStruct.Function(bot, update)
+
+	if uType == "message" {
+		update.Message.Args = strings.Split(update.Message.Text, " ")
+		for _, commandStruct := range bot.CommandHandlers {
+			if strings.HasPrefix(strings.ToLower(update.Message.Text), "/"+strings.ToLower(commandStruct.Command)) {
+				commandStruct.Function(bot, update)
+				return
+			}
+		}
+		// Fix for issue #1
+		if bot.UpdateHandler == nil {
 			return
 		}
-	}
-	// Fix for issue #1
-	if bot.UpdateHandler == nil {
+		bot.UpdateHandler(bot, update)
 		return
 	}
-	bot.UpdateHandler(bot, update)
+
+	if uType == "callback_query" {
+		query := update.CallbackQuery
+		query.Message.Args = strings.Split(query.Message.Text, " ")
+
+		if bot.CallbackQueryHandler == nil {
+			return
+		}
+		bot.CallbackQueryHandler(bot, query)
+		return
+	}
+
+	log.Printf("Unknown update type...")
 }
 
 func (bot *Bot) Stop() {
@@ -137,7 +165,11 @@ func (bot *Bot) Idle() {
 
 // Wrappers for RAW functions, maybe i'll join them...
 func (bot *Bot) SendMessage(chatID int64, text string, args SendMessageArgs) (SendMessageResult, *RequestsError) {
-	return sendMessage(bot.token, chatID, text, args.ParseMode, args.DisableNotification, args.DisableNotification, args.ReplyToMessageID)
+	return sendMessage(bot.token, chatID, text, args.ParseMode, args.DisableNotification, args.DisableNotification, args.ReplyToMessageID, args.ReplyMarkup)
+}
+
+func (bot *Bot) AnswerCallbackQuery(callbackQueryID string, args AnswerCallbackQueryArgs) (BooleanResult, *RequestsError) {
+	return answerCallbackQuery(bot.token, callbackQueryID, args.Text, args.ShowAlert, args.Url, args.CacheTime)
 }
 
 func (bot *Bot) SetChatTitle(chatID int64, title string) (BooleanResult, *RequestsError) {

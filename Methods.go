@@ -62,9 +62,8 @@ func sendChatAction(botToken string, chatID int64, action string) (BooleanResult
 }
 
 func sendMessage(botToken string, chatID int64, text string, parseMode int, disableWebPagePreview bool,
-	disableNotification bool, replyToMessageId int) (SendMessageResult, *RequestsError) {
+	disableNotification bool, replyToMessageId int, replyMarkup InlineKeyboardMarkup) (SendMessageResult, *RequestsError) {
 	var sendMessageResult = SendMessageResult{}
-	// Working placeholder
 	kwargs := make(map[string]string)
 	kwargs["disable_notification"] = strconv.FormatBool(disableNotification)
 	kwargs["disable_web_page_preview"] = strconv.FormatBool(disableWebPagePreview)
@@ -74,12 +73,45 @@ func sendMessage(botToken string, chatID int64, text string, parseMode int, disa
 	if replyToMessageId != 0 {
 		kwargs["reply_to_message_id"] = strconv.Itoa(replyToMessageId)
 	}
+
+	if replyMarkup.InlineKeyboard != nil {
+		b, e := json.Marshal(replyMarkup)
+		if e != nil {
+			fmt.Println(e)
+			return sendMessageResult, nil
+		}
+
+		kwargs["reply_markup"] = string(b)
+		fmt.Println(kwargs["reply_markup"])
+	}
+
 	result, err := MakeRequest(baseUrl+"bot"+botToken+"/sendMessage", nil, kwargs)
 	if err != nil {
 		return sendMessageResult, err
 	}
 	toApiResult(result, &sendMessageResult)
 	return sendMessageResult, nil
+}
+
+func answerCallbackQuery(botToken string, callbackQueryID string, text string, showAlert bool, url string, cacheTime int) (BooleanResult, *RequestsError) {
+	bres := BooleanResult{}
+	kwargs := make(map[string]string)
+	kwargs["callback_query_id"] = callbackQueryID
+	if text != "" {
+		kwargs["text"] = text
+	}
+	if showAlert {
+		kwargs["show_alert"] = "true"
+	}
+	if url != "" {
+		kwargs["url"] = url
+	}
+	if cacheTime != 0 {
+		kwargs["cache_time"] = strconv.Itoa(int(cacheTime))
+	}
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/answerCallbackQuery", nil, kwargs)
+	toApiResult(res, &bres)
+	return bres, err
 }
 
 func setChatTitle(botToken string, chatID int64, title string) (BooleanResult, *RequestsError) {
