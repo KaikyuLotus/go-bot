@@ -328,6 +328,15 @@ type SendMessageArgs struct {
 	ReplyMarkup           InlineKeyboardMarkup
 }
 
+type EditMessageArgs struct {
+	ChatID				int64
+	MessageID			int
+	InlineMessageID			string
+	ParseMode             int
+	DisableWebPagePreview bool
+	ReplyMarkup           InlineKeyboardMarkup
+}
+
 type SendPhotoArgs struct {
 	Caption             string
 	ParseMode           int

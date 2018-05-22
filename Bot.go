@@ -164,6 +164,12 @@ func (bot *Bot) Idle() {
 }
 
 // Wrappers for RAW functions, maybe i'll join them...
+
+
+func (bot *Bot) EditMessageText(text string, args EditMessageArgs) (BooleanResult, *RequestsError) {
+	return editMessageText(bot.token, text, args.ChatID, args.MessageID, args.InlineMessageID, args.ParseMode, args.DisableWebPagePreview, args.ReplyMarkup)
+}
+
 func (bot *Bot) SendMessage(chatID int64, text string, args SendMessageArgs) (SendMessageResult, *RequestsError) {
 	return sendMessage(bot.token, chatID, text, args.ParseMode, args.DisableNotification, args.DisableNotification, args.ReplyToMessageID, args.ReplyMarkup)
 }

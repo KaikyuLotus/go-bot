@@ -61,6 +61,40 @@ func sendChatAction(botToken string, chatID int64, action string) (BooleanResult
 	return booleanResult, err // statusCheck(&booleanResult, resp, status)
 }
 
+func editMessageText(botToken string, text string, chatID int64, messageID int, inlineMessageID string,
+	parseMode int, disableWebPagePreview bool, replyMarkup InlineKeyboardMarkup) (BooleanResult, *RequestsError) {
+	var booleanResult = BooleanResult{}
+	kwargs := make(map[string]string)
+	kwargs["text"] = text
+	kwargs["parse_mode"] = getParseMode(parseMode)
+	if chatID != 0 {
+		kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	}
+	if messageID != 0 {
+		kwargs["message_id"] = strconv.Itoa(messageID)
+	}
+	if inlineMessageID != "" {
+		kwargs["inline_message_id"] = inlineMessageID
+	}
+	if disableWebPagePreview {
+		kwargs["disable_web_page_preview"] = "true"
+	}
+	if replyMarkup.InlineKeyboard != nil {
+		b, e := json.Marshal(replyMarkup)
+		if e != nil {
+			panic(e)
+		}
+		kwargs["reply_markup"] = string(b)
+	}
+
+	result, err := MakeRequest(baseUrl+"bot"+botToken+"/editMessageText", nil, kwargs)
+	if err != nil {
+		return booleanResult, err
+	}
+	toApiResult(result, &booleanResult)
+	return booleanResult, nil
+}
+
 func sendMessage(botToken string, chatID int64, text string, parseMode int, disableWebPagePreview bool,
 	disableNotification bool, replyToMessageId int, replyMarkup InlineKeyboardMarkup) (SendMessageResult, *RequestsError) {
 	var sendMessageResult = SendMessageResult{}
@@ -77,12 +111,10 @@ func sendMessage(botToken string, chatID int64, text string, parseMode int, disa
 	if replyMarkup.InlineKeyboard != nil {
 		b, e := json.Marshal(replyMarkup)
 		if e != nil {
-			fmt.Println(e)
-			return sendMessageResult, nil
+			panic(e)
 		}
 
 		kwargs["reply_markup"] = string(b)
-		fmt.Println(kwargs["reply_markup"])
 	}
 
 	result, err := MakeRequest(baseUrl+"bot"+botToken+"/sendMessage", nil, kwargs)
