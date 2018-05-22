@@ -82,11 +82,194 @@ func sendMessage(botToken string, chatID int64, text string, parseMode int, disa
 	return sendMessageResult, nil
 }
 
-func setChatTitle(botToken string, chatID int64, title string) {
+func setChatTitle(botToken string, chatID int64, title string) (BooleanResult, *RequestsError) {
 	kwargs := make(map[string]string)
 	kwargs["chat_id"] = strconv.Itoa(int(chatID))
 	kwargs["title"] = title
-	MakeRequest(baseUrl+"bot"+botToken+"/setChatTitle", nil, kwargs)
+	_, err := MakeRequest(baseUrl+"bot"+botToken+"/setChatTitle", nil, kwargs)
+	return BooleanResult{}, err
+}
+
+func setChatDescription(botToken string, chatID int64, description string) (BooleanResult, *RequestsError) {
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["description"] = description
+	_, err := MakeRequest(baseUrl+"bot"+botToken+"/setChatDescription", nil, kwargs)
+	return BooleanResult{}, err
+}
+
+func pinChatMessage(botToken string, chatID int64, messageID int, disableNotification bool) (BooleanResult, *RequestsError) {
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["message_id"] = strconv.Itoa(int(messageID))
+	if disableNotification {
+		kwargs["disable_notification"] = "true"
+	}
+	_, err := MakeRequest(baseUrl+"bot"+botToken+"/pinChatMessage", nil, kwargs)
+	return BooleanResult{}, err
+}
+
+func unpinChatMessage(botToken string, chatID int64) (BooleanResult, *RequestsError) {
+	bres := BooleanResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/unpinChatMessage", nil, kwargs)
+	toApiResult(res, &bres)
+	return bres, err
+}
+
+func kickChatMember(botToken string, chatID int64, userID int, untilDate int64) (BooleanResult, *RequestsError) {
+	bres := BooleanResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["user_id"] = strconv.Itoa(int(userID))
+	kwargs["until_date"] = strconv.Itoa(int(untilDate))
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/kickChatMember", nil, kwargs)
+	toApiResult(res, &bres)
+	return bres, err
+}
+
+func unbanChatMember(botToken string, chatID int64, userID int) (BooleanResult, *RequestsError) {
+	bres := BooleanResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["user_id"] = strconv.Itoa(int(userID))
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/unbanChatMember", nil, kwargs)
+	toApiResult(res, &bres)
+	return bres, err
+}
+
+func getUserProfilePhotos(botToken string, userID int, offset int, limit int) (GetUserProfilePhotosResult, *RequestsError) {
+	sres := GetUserProfilePhotosResult{}
+	kwargs := make(map[string]string)
+	kwargs["user_id"] = strconv.Itoa(int(userID))
+	if limit > 0 {
+		kwargs["limit"] = strconv.Itoa(limit)
+	}
+	if offset > 0 {
+		kwargs["offset"] = strconv.Itoa(offset)
+	}
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/getUserProfilePhotos", nil, kwargs)
+	toApiResult(res, &sres)
+	return sres, err
+}
+
+func getFile(botToken string, fileID string) (GetFileResult, *RequestsError) {
+	fres := GetFileResult{}
+	kwargs := make(map[string]string)
+	kwargs["file_id"] = fileID
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/getFile", nil, kwargs)
+	toApiResult(res, &fres)
+	return fres, err
+}
+
+func leaveChat(botToken string, chatID int64) (BooleanResult, *RequestsError) {
+	bres := BooleanResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/leaveChat", nil, kwargs)
+	toApiResult(res, &bres)
+	return bres, err
+}
+
+func exportChatInviteLink(botToken string, chatID int64) (StringResult, *RequestsError) {
+	sres := StringResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/exportChatInviteLink", nil, kwargs)
+	toApiResult(res, &sres)
+	return sres, err
+}
+
+func setChatPhoto(botToken string, chatID int64, photoBytes []byte) (BooleanResult, *RequestsError) {
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["filename"] = "chatPhoto.jpg"
+	kwargs["filetype"] = "photo"
+	_, err := MakeRequest(baseUrl+"bot"+botToken+"/setChatPhoto", photoBytes, kwargs)
+	return BooleanResult{}, err
+}
+
+func deleteChatPhoto(botToken string, chatID int64) (BooleanResult, *RequestsError) {
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	_, err := MakeRequest(baseUrl+"bot"+botToken+"/deleteChatPhoto", nil, kwargs)
+	return BooleanResult{}, err
+}
+
+func getChat(botToken string, chatID int64) (GetChatResult, *RequestsError) {
+	gres := GetChatResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/getChat", nil, kwargs)
+	toApiResult(res, &gres)
+	return gres, err
+}
+
+func getChatAdministrators(botToken string, chatID int64) (GetChatAdministratorsResult, *RequestsError) {
+	gres := GetChatAdministratorsResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/getChatAdministrators", nil, kwargs)
+	toApiResult(res, &gres)
+	return gres, err
+}
+
+func getChatMembersCount(botToken string, chatID int64) (IntegerResult, *RequestsError) {
+	ires := IntegerResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/getChatMembersCount", nil, kwargs)
+	toApiResult(res, &ires)
+	return ires, err
+}
+
+func getChatMember(botToken string, chatID int64, userID int)(GetChatMemberResult, *RequestsError){
+	cres := GetChatMemberResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["user_id"] = strconv.Itoa(userID)
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/getChatMember", nil, kwargs)
+	toApiResult(res, &cres)
+	return cres, err
+}
+
+func setChatStickerSet(botToken string, chatID int64, stickerSetName string) (BooleanResult, *RequestsError) {
+	bres := BooleanResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["sticker_set_name"] = stickerSetName
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/setChatStickerSet", nil, kwargs)
+	toApiResult(res, &bres)
+	return bres, err
+}
+
+func deleteChatStickerSet(botToken string, chatID int64) (BooleanResult, *RequestsError) {
+	bres := BooleanResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/deleteChatStickerSet", nil, kwargs)
+	toApiResult(res, &bres)
+	return bres, err
+}
+
+func sendContact(botToken string, chatID int64, phoneNumber string, firstName string, lastName string, disableNotification bool,
+	replyToMessageID int) (SendMessageResult, *RequestsError){
+	sres := SendMessageResult{}
+	kwargs := make(map[string]string)
+	kwargs["chat_id"] = strconv.Itoa(int(chatID))
+	kwargs["phone_number"] = phoneNumber
+	kwargs["first_name"] = firstName
+	kwargs["last_name"] = lastName
+	if disableNotification {
+		kwargs["disable_notification"] = "true"
+	}
+	if replyToMessageID != 0 {
+		kwargs["reply_to_message_id"] = strconv.Itoa(replyToMessageID)
+	}
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/sendContact", nil, kwargs)
+	toApiResult(res, &sres)
+	return sres, err
 }
 
 func sendSticker(botToken string, chatID int64, fileID string, replyToMessageId int, disableNotification bool) (SendStickerResult, *RequestsError) {

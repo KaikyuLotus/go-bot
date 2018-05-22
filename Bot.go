@@ -140,8 +140,80 @@ func (bot *Bot) SendMessage(chatID int64, text string, args SendMessageArgs) (Se
 	return sendMessage(bot.token, chatID, text, args.ParseMode, args.DisableNotification, args.DisableNotification, args.ReplyToMessageID)
 }
 
-func (bot *Bot) SetChatTitle(chatID int64, title string) {
-	setChatTitle(bot.token, chatID, title)
+func (bot *Bot) SetChatTitle(chatID int64, title string) (BooleanResult, *RequestsError) {
+	return setChatTitle(bot.token, chatID, title)
+}
+
+func (bot *Bot) SetChatDescription(chatID int64, description string) (BooleanResult, *RequestsError) {
+	return setChatDescription(bot.token, chatID, description)
+}
+
+func (bot *Bot) PinChatMessage(chatID int64, messageID int, disableNotification bool) (BooleanResult, *RequestsError) {
+	return pinChatMessage(bot.token, chatID, messageID, disableNotification)
+}
+
+func (bot *Bot) UnpinChatMessage(chatID int64) (BooleanResult, *RequestsError) {
+	return unpinChatMessage(bot.token, chatID)
+}
+
+func (bot *Bot) KickChatMember(chatID int64, userID int, untilDate int64) (BooleanResult, *RequestsError) {
+	return kickChatMember(bot.token, chatID, userID, untilDate)
+}
+
+func (bot *Bot) UnbanChatMember(chatID int64, userID int) (BooleanResult, *RequestsError) {
+	return unbanChatMember(bot.token, chatID, userID)
+}
+
+func (bot *Bot) ExportChatInviteLink(chatID int64) (StringResult, *RequestsError) {// (BooleanResult, *RequestsError) {
+	return exportChatInviteLink(bot.token, chatID)
+}
+
+func (bot *Bot) GetUserProfilePhotos(userID int, args GetUserProfilePhotosArgs) (GetUserProfilePhotosResult, *RequestsError) {
+	return getUserProfilePhotos(bot.token, userID, args.Offset, args.Limit)
+}
+
+func (bot *Bot) GetFile(fileID string) (GetFileResult, *RequestsError) {
+	return getFile(bot.token, fileID)
+}
+
+func (bot *Bot) LeaveChat(chatID int64) (BooleanResult, *RequestsError) {
+	return leaveChat(bot.token, chatID)
+}
+
+func (bot *Bot) GetChatAdministrators(chatID int64) (GetChatAdministratorsResult, *RequestsError) {
+	return getChatAdministrators(bot.token, chatID)
+}
+
+func (bot *Bot) GetChatMembersCount(chatID int64) (IntegerResult, *RequestsError) {
+	return getChatMembersCount(bot.token, chatID)
+}
+
+func (bot *Bot) getChatMember(chatID int64, userID int) (GetChatMemberResult, *RequestsError) {
+	return getChatMember(bot.token, chatID, userID)
+}
+
+func (bot *Bot) SetChatStickerSet(chatID int64, stickerSetName string) (BooleanResult, *RequestsError) {
+	return setChatStickerSet(bot.token, chatID, stickerSetName)
+}
+
+func (bot *Bot) deleteChatStickerSet(chatID int64) (BooleanResult, *RequestsError) {
+	return deleteChatStickerSet(bot.token, chatID)
+}
+
+func (bot *Bot) SendContact(chatID int64, phoneNumber string, firstName string, contact SendContactArgs) (SendMessageResult, *RequestsError) {
+	return sendContact(bot.token, chatID, phoneNumber, firstName, contact.LastName, contact.DisableNotification, contact.ReplyToMessageID)
+}
+
+func (bot *Bot) SetChatPhoto(chatID int64, photoBytes []byte) (BooleanResult, *RequestsError) {
+	return setChatPhoto(bot.token, chatID, photoBytes)
+}
+
+func (bot *Bot) DeleteChatPhoto(chatID int64) (BooleanResult, *RequestsError) {
+	return deleteChatPhoto(bot.token, chatID)
+}
+
+func (bot *Bot) GetChat(chatID int64) (GetChatResult, *RequestsError) {
+	return getChat(bot.token, chatID)
 }
 
 func (bot *Bot) SendChatAction(chatID int64, action string) (BooleanResult, *RequestsError) {

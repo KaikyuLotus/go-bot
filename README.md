@@ -6,6 +6,8 @@ This is my first Go project.<br>
 
 ## Examples
 
+# These examples are outdated, please be patient.
+
 ### Hello World Command
 ```go
 package main
