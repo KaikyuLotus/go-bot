@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 	"strings"
+	"regexp"
 )
 
 /*
@@ -36,7 +37,7 @@ func (bot *Bot) SetPanicHandler(foo PanicHandlerType) {
 }
 
 func (bot *Bot) AddCommandHandler(command string, foo CommandHandlerType) {
-	bot.CommandHandlers = append(bot.CommandHandlers, CommandStruct{command, foo})
+	bot.CommandHandlers = append(bot.CommandHandlers, CommandStruct{strings.ToLower(command), foo})
 }
 
 func (bot *Bot) getMe() (GetMeResult, *RequestsError) {
@@ -84,11 +85,25 @@ func (bot *Bot) elaborateUpdate(update Update) {
 	bot.Offset = update.UpdateID + 1
 
 	if uType == "message" {
-		update.Message.Args = strings.Split(update.Message.Text, " ")
+		// Thanks to https://gist.github.com/sk22/cc02d95cd2d24c882835c1dddb33e1da#file-telegramcmd-regex
+		regex, _ := regexp.Compile("(?i)^/([^@\\s]+)@?(?:(\\S+)|)\\s?([\\s\\S]*)$")
 		for _, commandStruct := range bot.CommandHandlers {
-			if strings.HasPrefix(strings.ToLower(update.Message.Text), "/"+strings.ToLower(commandStruct.Command)) {
+			res := regex.FindStringSubmatch(update.Message.Text)
+			// Check if the regex has no matches
+			if len(res) == 0 {
+				break // this is not a /command
+			}
+
+			if res[2] != "" { // is it /command@username ?
+				if strings.ToLower(res[2]) != strings.ToLower(bot.Username) {
+					break // This isn't out bot's username
+				}
+			}
+			// Is it our command?
+			if strings.ToLower(res[1]) == commandStruct.Command {
+				update.Message.Args = strings.Split(res[3], " ") // Split args
 				commandStruct.Function(bot, update)
-				return
+				return // we're done with this update
 			}
 		}
 		// Fix for issue #1
