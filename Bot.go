@@ -325,3 +325,7 @@ func (bot *Bot) SendVoice(chatID int64, fileID string, args SendVoiceArgs) (Send
 func (bot *Bot) SetWebhoook(url string, args SetWebhookArgs) (BooleanResult, *RequestsError) {
 	return setWebhook(bot.token, url, args.Certificate, args.MaxConnections, args.AllowedUpdates)
 }
+
+func (bot *Bot) DeleteWebhook() (BooleanResult, *RequestsError) {
+	return deleteWebhook(bot.token)
+}

@@ -484,6 +484,13 @@ func sendVoiceBytes(botToken string, chatID int64, fileBytes []byte, fileName st
 	return SendVoiceResult{}, err
 }
 
+func deleteWebhook(botToken string) (BooleanResult, *RequestsError) {
+	booleanResult := BooleanResult{}
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/deleteWebhook", nil, make(map[string]string))
+	toApiResult(res, &booleanResult)
+	return booleanResult, err
+}
+
 func setWebhook(botToken string, url string, certificate []byte,
 	maxConnections int, allowedUpdates []string) (BooleanResult, *RequestsError) {
 	booleanResult := BooleanResult{}
