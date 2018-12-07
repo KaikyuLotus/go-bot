@@ -10,7 +10,7 @@ func ReadFileBytes(fileName string) []byte {
 	if err != nil {
 		log.Println(err)
 	}
-	return b
+	return b // bytes.TrimRight(b, "\r\n")
 }
 
 func ReadFileString(fileName string) string {

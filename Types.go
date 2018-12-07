@@ -4,7 +4,7 @@ import "io"
 
 // enums
 const (
-	None     = iota
+	None = iota
 	Markdown
 	HTML
 )
@@ -329,9 +329,9 @@ type SendMessageArgs struct {
 }
 
 type EditMessageArgs struct {
-	ChatID				int64
-	MessageID			int
-	InlineMessageID			string
+	ChatID                int64
+	MessageID             int
+	InlineMessageID       string
 	ParseMode             int
 	DisableWebPagePreview bool
 	ReplyMarkup           InlineKeyboardMarkup
@@ -384,6 +384,12 @@ type AnswerCallbackQueryArgs struct {
 	ShowAlert bool
 	Url       string
 	CacheTime int
+}
+
+type SetWebhookArgs struct {
+	Certificate    []byte
+	MaxConnections int
+	AllowedUpdates []string
 }
 
 type CallbackGame struct {

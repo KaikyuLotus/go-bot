@@ -1,11 +1,11 @@
 package gobot
 
 import (
-	"strconv"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
-	"fmt"
+	"strconv"
 )
 
 var baseUrl = "https://api.telegram.org/"
@@ -26,7 +26,7 @@ func getParseMode(mode int) string {
 	return ""
 }
 
-// Returns an empty struct if an error happens and the error, otherwise returns the result and nil
+// Returns an empty struct and the error if an error happens, otherwise returns the result and nil
 func getMe(botToken string) (GetMeResult, *RequestsError) {
 	var getMeResult = GetMeResult{}
 	response, err := MakeRequest(baseUrl+"bot"+botToken+"/getMe", nil, make(map[string]string))
@@ -288,7 +288,7 @@ func getChatMembersCount(botToken string, chatID int64) (IntegerResult, *Request
 	return ires, err
 }
 
-func getChatMember(botToken string, chatID int64, userID int)(GetChatMemberResult, *RequestsError){
+func getChatMember(botToken string, chatID int64, userID int) (GetChatMemberResult, *RequestsError) {
 	cres := GetChatMemberResult{}
 	kwargs := make(map[string]string)
 	kwargs["chat_id"] = strconv.Itoa(int(chatID))
@@ -318,7 +318,7 @@ func deleteChatStickerSet(botToken string, chatID int64) (BooleanResult, *Reques
 }
 
 func sendContact(botToken string, chatID int64, phoneNumber string, firstName string, lastName string, disableNotification bool,
-	replyToMessageID int) (SendMessageResult, *RequestsError){
+	replyToMessageID int) (SendMessageResult, *RequestsError) {
 	sres := SendMessageResult{}
 	kwargs := make(map[string]string)
 	kwargs["chat_id"] = strconv.Itoa(int(chatID))
@@ -484,9 +484,30 @@ func sendVoiceBytes(botToken string, chatID int64, fileBytes []byte, fileName st
 	return SendVoiceResult{}, err
 }
 
+func setWebhook(botToken string, url string, certificate []byte,
+	maxConnections int, allowedUpdates []string) (BooleanResult, *RequestsError) {
+	booleanResult := BooleanResult{}
+	kwargs := make(map[string]string)
+	if certificate != nil {
+		kwargs["filename"] = "certificate.pem"
+		kwargs["filetype"] = "certificate"
+	} else {
+		panic("AO do sta il certificato")
+	}
+	kwargs["url"] = url
+	if maxConnections != 0 {
+		kwargs["max_connections"] = strconv.Itoa(maxConnections)
+	}
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/setWebhook", certificate, kwargs)
+
+	toApiResult(res, &booleanResult)
+
+	return booleanResult, err
+}
+
 func sendVoiceByID(botToken string, chatID int64, fileID string, caption string, parseMode int,
-	duration int, disableNotification bool, replyToMessageId int) (SendVoiceResult, *RequestsError) {
+	duration int, disableNotification bool, replyToMessageID int) (SendVoiceResult, *RequestsError) {
 	sendVoiceResult := SendVoiceResult{}
-	_, err := sendVoiceBytes(botToken, chatID, nil, fileID, caption, parseMode, duration, disableNotification, replyToMessageId)
+	_, err := sendVoiceBytes(botToken, chatID, nil, fileID, caption, parseMode, duration, disableNotification, replyToMessageID)
 	return sendVoiceResult, err
 }

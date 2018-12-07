@@ -2,9 +2,9 @@ package gobot
 
 import (
 	"log"
-	"time"
-	"strings"
 	"regexp"
+	"strings"
+	"time"
 )
 
 /*
@@ -24,16 +24,19 @@ func NewBot(token string) (*Bot, *RequestsError) {
 	return bot, nil
 }
 
-func (bot *Bot) SetUpdateHandler(foo UpdateHandlerType) {
+func (bot *Bot) SetUpdateHandler(foo UpdateHandlerType) *Bot {
 	bot.UpdateHandler = foo
+	return bot
 }
 
-func (bot *Bot) SetCallbackQueryHandler(foo CallbackHandlerType) {
+func (bot *Bot) SetCallbackQueryHandler(foo CallbackHandlerType) *Bot {
 	bot.CallbackQueryHandler = foo
+	return bot
 }
 
-func (bot *Bot) SetPanicHandler(foo PanicHandlerType) {
+func (bot *Bot) SetPanicHandler(foo PanicHandlerType) *Bot {
 	bot.ErrorHandler = foo
+	return bot
 }
 
 func (bot *Bot) AddCommandHandler(command string, foo CommandHandlerType) {
@@ -162,13 +165,14 @@ func cleanUpdates(bot *Bot) {
 	}
 }
 
-func (bot *Bot) StartPolling(clean bool) {
+func (bot *Bot) StartPolling(clean bool) *Bot {
 	if clean {
 		cleanUpdates(bot)
 		log.Println("Updates cleaned!")
 	}
 
 	go bot.pollingFunction() // I'll take care of the goroutine later
+	return bot
 }
 
 func (bot *Bot) Idle() {
@@ -179,7 +183,6 @@ func (bot *Bot) Idle() {
 }
 
 // Wrappers for RAW functions, maybe i'll join them...
-
 
 func (bot *Bot) EditMessageText(text string, args EditMessageArgs) (BooleanResult, *RequestsError) {
 	return editMessageText(bot.token, text, args.ChatID, args.MessageID, args.InlineMessageID, args.ParseMode, args.DisableWebPagePreview, args.ReplyMarkup)
@@ -217,7 +220,7 @@ func (bot *Bot) UnbanChatMember(chatID int64, userID int) (BooleanResult, *Reque
 	return unbanChatMember(bot.token, chatID, userID)
 }
 
-func (bot *Bot) ExportChatInviteLink(chatID int64) (StringResult, *RequestsError) {// (BooleanResult, *RequestsError) {
+func (bot *Bot) ExportChatInviteLink(chatID int64) (StringResult, *RequestsError) { // (BooleanResult, *RequestsError) {
 	return exportChatInviteLink(bot.token, chatID)
 }
 
@@ -317,4 +320,8 @@ func (bot *Bot) SendVoiceBytes(chatID int64, fileName string, fileBytes []byte, 
 
 func (bot *Bot) SendVoice(chatID int64, fileID string, args SendVoiceArgs) (SendVoiceResult, *RequestsError) {
 	return sendVoiceByID(bot.token, chatID, fileID, args.Caption, args.ParseMode, args.Duration, args.DisableNotification, args.ReplyToMessageID)
+}
+
+func (bot *Bot) SetWebhoook(url string, args SetWebhookArgs) (BooleanResult, *RequestsError) {
+	return setWebhook(bot.token, url, args.Certificate, args.MaxConnections, args.AllowedUpdates)
 }

@@ -1,15 +1,15 @@
 package gobot
 
 import (
-	"net/http"
 	"bytes"
+	"fmt"
+	"io"
 	"mime/multipart"
+	"net"
+	"net/http"
 	"net/url"
 	"strings"
-	"fmt"
 	"time"
-	"net"
-	"io"
 )
 
 var client = &http.Client{}
