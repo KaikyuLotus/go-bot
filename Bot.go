@@ -86,6 +86,8 @@ func (bot *Bot) webhookUpdateHandler(rw http.ResponseWriter, req *http.Request) 
 		panic(err)
 	}
 
+	fmt.Println(string(body))
+
 	var updates []Update
 	err = json.Unmarshal(body, &updates)
 	if err != nil {
