@@ -190,8 +190,8 @@ func cleanUpdates(bot *Bot) {
 
 func (bot *Bot) RunServer(port int, useTLS bool) error {
 	router := http.NewServeMux()
-	router.Handle("/push", http.HandlerFunc(bot.webhookUpdateHandler))
-	router.Handle("/update", http.HandlerFunc(bot.pushUpdateHandler))
+	router.Handle("/push", http.HandlerFunc(bot.pushUpdateHandler))
+	router.Handle("/update", http.HandlerFunc(bot.webhookUpdateHandler))
 
 	var TLSconfig *tls.Config
 
