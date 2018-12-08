@@ -191,7 +191,14 @@ func cleanUpdates(bot *Bot) {
 	}
 }
 
-func (bot *Bot) StartWebhook(url string, port int, certificateFileName string, serverKeyFileName string) {
+func (bot *Bot) StartWebhook(url string, port int, certificateFileName string,
+	serverKeyFileName string, clean bool) {
+
+	if clean {
+		cleanUpdates(bot)
+		log.Println("Updates cleaned!")
+	}
+
 	bot.DeleteWebhook()
 	bot.SetWebhoook(
 		url, port, "update",
