@@ -47,8 +47,6 @@ type CommandStruct struct {
 	Function CommandHandlerType
 }
 
-type ServerFunctionType func(rw http.ResponseWriter, req *http.Request)
-
 type UpdateHandlerType func(*Bot, Update)
 
 type CallbackHandlerType func(*Bot, CallbackQuery)
@@ -123,8 +121,6 @@ type Bot struct {
 	authorized           bool
 	UpdateHandler        UpdateHandlerType
 	server               *http.Server
-	wrappedPushHandler   http.Handler
-	wrappedUpdateHandler http.Handler
 	CallbackQueryHandler CallbackHandlerType
 	CommandHandlers      []CommandStruct
 	ErrorHandler         PanicHandlerType

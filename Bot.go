@@ -18,11 +18,10 @@ So please don't kill me <3
 // Bot constructor
 func NewBot(token string) (*Bot, *RequestsError) {
 	bot := &Bot{
-		token:                token,
-		Running:              true,
-		wrappedUpdateHandler: http.HandlerFunc(webhookUpdateHandler),
-		wrappedPushHandler:   http.HandlerFunc(pushUpdateHandler),
+		token:   token,
+		Running: true,
 	}
+
 	_, err := bot.getMe()
 	if err != nil {
 		return &Bot{}, err
@@ -72,13 +71,18 @@ func (bot *Bot) getUpdates(offset int64, timeout bool) (GetUpdateResult, *Reques
 	return updates, nil
 }
 
-func pushUpdateHandler(rw http.ResponseWriter, req *http.Request) {
+func (bot *Bot) pushUpdateHandler(rw http.ResponseWriter, req *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("Thanks!"))
 }
 
-func webhookUpdateHandler(rw http.ResponseWriter, req *http.Request) {
+func (bot *Bot) webhookUpdateHandler(rw http.ResponseWriter, req *http.Request) {
 	fmt.Println("Update!")
+	updates := GetUpdateResult{}
+	toApiResult(req.Body, &updates)
+	for _, update := range updates.Result {
+		bot.elaborateUpdate(update)
+	}
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("Thanks!"))
 }
@@ -185,8 +189,8 @@ func cleanUpdates(bot *Bot) {
 
 func (bot *Bot) RunServer(port int, useTLS bool) error {
 	router := http.NewServeMux()
-	router.Handle("/push", bot.wrappedPushHandler)
-	router.Handle("/update", bot.wrappedUpdateHandler)
+	router.Handle("/push", http.HandlerFunc(bot.webhookUpdateHandler))
+	router.Handle("/update", http.HandlerFunc(bot.pushUpdateHandler))
 
 	bot.server = &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: router}
 	if useTLS {
