@@ -88,15 +88,10 @@ func (bot *Bot) webhookUpdateHandler(rw http.ResponseWriter, req *http.Request) 
 
 	fmt.Println(string(body))
 
-	var updates []Update
-	err = json.Unmarshal(body, &updates)
-	if err != nil {
-		panic(err)
-	}
+	var update Update
+	json.Unmarshal(body, &update)
 
-	for _, update := range updates {
-		bot.elaborateUpdate(update)
-	}
+	bot.elaborateUpdate(update)
 
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("Thanks!"))
