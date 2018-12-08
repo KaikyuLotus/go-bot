@@ -80,13 +80,7 @@ func (bot *Bot) pushUpdateHandler(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (bot *Bot) webhookUpdateHandler(rw http.ResponseWriter, req *http.Request) {
-	fmt.Println("Update!")
-	body, err := ioutil.ReadAll(req.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(string(body))
+	body, _ := ioutil.ReadAll(req.Body)
 
 	var update Update
 	json.Unmarshal(body, &update)
@@ -95,7 +89,6 @@ func (bot *Bot) webhookUpdateHandler(rw http.ResponseWriter, req *http.Request) 
 
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("Thanks!"))
-	fmt.Println("Readed.")
 }
 
 func (bot *Bot) elaborateUpdate(update Update) {
@@ -198,24 +191,24 @@ func cleanUpdates(bot *Bot) {
 	}
 }
 
-func (bot *Bot) RunServer(port int, useTLS bool) error {
+func (bot *Bot) StartWebhook(url string, port int, certificateFileName string, serverKeyFileName string) {
+	bot.DeleteWebhook()
+	bot.SetWebhoook(
+		url, port, "update",
+		SetWebhookArgs{Certificate: certificateFileName},
+	)
+
 	router := http.NewServeMux()
 	router.Handle("/push", http.HandlerFunc(bot.pushUpdateHandler))
 	router.Handle("/update", http.HandlerFunc(bot.webhookUpdateHandler))
 
-	var TLSconfig *tls.Config
-
-	if useTLS {
-		TLSconfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
+	bot.server = &http.Server{
+		Addr:      fmt.Sprintf(":%d", port),
+		Handler:   router,
+		TLSConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
-	bot.server = &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: router, TLSConfig: TLSconfig}
-	if useTLS {
-		return bot.server.ListenAndServeTLS("certificate.pem", "server.key")
-	}
-	return bot.server.ListenAndServe()
+	go bot.server.ListenAndServeTLS(certificateFileName, serverKeyFileName)
 }
 
 func (bot *Bot) StartPolling(clean bool) *Bot {
