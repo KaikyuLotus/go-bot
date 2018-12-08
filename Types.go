@@ -1,6 +1,9 @@
 package gobot
 
-import "io"
+import (
+	"io"
+	"net/http"
+)
 
 // enums
 const (
@@ -43,6 +46,8 @@ type CommandStruct struct {
 	Command  string
 	Function CommandHandlerType
 }
+
+type ServerFunctionType func(rw http.ResponseWriter, req *http.Request)
 
 type UpdateHandlerType func(*Bot, Update)
 
@@ -117,6 +122,9 @@ type Bot struct {
 	token                string
 	authorized           bool
 	UpdateHandler        UpdateHandlerType
+	server               *http.Server
+	wrappedPushHandler   http.Handler
+	wrappedUpdateHandler http.Handler
 	CallbackQueryHandler CallbackHandlerType
 	CommandHandlers      []CommandStruct
 	ErrorHandler         PanicHandlerType
@@ -289,6 +297,16 @@ type GetFileResult struct {
 	Result File `json:"result"`
 }
 
+type GetWebhookInfoResult struct {
+	URL                  string   `json:"url"`
+	HasCustomCertificate bool     `json:"has_custom_certificate"`
+	PendingUpdateCount   int      `json:"pending_update_count"`
+	LastErrorDate        int      `json:"last_error_date"`
+	LastErrorMessage     string   `json:"last_error_message"`
+	MaxConnections       int      `json:"max_connections"`
+	AllowedUpdates       []string `json:"allowed_updates"`
+}
+
 // ToDo: Complete those types
 type SendAudioResult struct {
 }
@@ -387,7 +405,7 @@ type AnswerCallbackQueryArgs struct {
 }
 
 type SetWebhookArgs struct {
-	Certificate    []byte
+	Certificate    string
 	MaxConnections int
 	AllowedUpdates []string
 }

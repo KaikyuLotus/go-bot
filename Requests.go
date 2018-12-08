@@ -39,26 +39,28 @@ func MakeRequest(urll string, contentBytes []byte, kwargs map[string]string) (io
 
 	// Build the request
 	u, _ := url.Parse(urll)
-	q := u.Query()
-	for key, value := range kwargs {
-		if value == "" {
-			continue
-		}
 
-		if isPost {
-			if strings.ToLower(key) == "filename" {
-				fileName = value
-				continue
-			} else if strings.ToLower(key) == "filetype" {
-				fileType = value
+	if kwargs != nil {
+		q := u.Query()
+		for key, value := range kwargs {
+			if value == "" {
 				continue
 			}
+
+			if isPost {
+				if strings.ToLower(key) == "filename" {
+					fileName = value
+					continue
+				} else if strings.ToLower(key) == "filetype" {
+					fileType = value
+					continue
+				}
+			}
+
+			q.Add(key, value)
 		}
-
-		q.Add(key, value)
+		u.RawQuery = q.Encode()
 	}
-
-	u.RawQuery = q.Encode()
 
 	if isPost {
 		// We NEED these two values when POSTing

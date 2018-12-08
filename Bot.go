@@ -1,7 +1,9 @@
 package gobot
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -15,7 +17,12 @@ So please don't kill me <3
 // I need to put return types on every foo in the future
 // Bot constructor
 func NewBot(token string) (*Bot, *RequestsError) {
-	bot := &Bot{token: token, Running: true}
+	bot := &Bot{
+		token:                token,
+		Running:              true,
+		wrappedUpdateHandler: http.HandlerFunc(webhookUpdateHandler),
+		wrappedPushHandler:   http.HandlerFunc(pushUpdateHandler),
+	}
 	_, err := bot.getMe()
 	if err != nil {
 		return &Bot{}, err
@@ -63,6 +70,17 @@ func (bot *Bot) getUpdates(offset int64, timeout bool) (GetUpdateResult, *Reques
 		return GetUpdateResult{}, err
 	}
 	return updates, nil
+}
+
+func pushUpdateHandler(rw http.ResponseWriter, req *http.Request) {
+	rw.WriteHeader(http.StatusOK)
+	rw.Write([]byte("Thanks!"))
+}
+
+func webhookUpdateHandler(rw http.ResponseWriter, req *http.Request) {
+	fmt.Println("Update!")
+	rw.WriteHeader(http.StatusOK)
+	rw.Write([]byte("Thanks!"))
 }
 
 func (bot *Bot) elaborateUpdate(update Update) {
@@ -163,6 +181,18 @@ func cleanUpdates(bot *Bot) {
 			log.Printf("Cleaned to update #%d", bot.Offset)
 		}
 	}
+}
+
+func (bot *Bot) RunServer(port int, useTLS bool) error {
+	router := http.NewServeMux()
+	router.Handle("/push", bot.wrappedPushHandler)
+	router.Handle("/update", bot.wrappedUpdateHandler)
+
+	bot.server = &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: router}
+	if useTLS {
+		return bot.server.ListenAndServeTLS("certificate.pem", "server.key")
+	}
+	return bot.server.ListenAndServe()
 }
 
 func (bot *Bot) StartPolling(clean bool) *Bot {
@@ -322,10 +352,14 @@ func (bot *Bot) SendVoice(chatID int64, fileID string, args SendVoiceArgs) (Send
 	return sendVoiceByID(bot.token, chatID, fileID, args.Caption, args.ParseMode, args.Duration, args.DisableNotification, args.ReplyToMessageID)
 }
 
-func (bot *Bot) SetWebhoook(url string, args SetWebhookArgs) (BooleanResult, *RequestsError) {
-	return setWebhook(bot.token, url, args.Certificate, args.MaxConnections, args.AllowedUpdates)
+func (bot *Bot) SetWebhoook(url string, port int, path string, args SetWebhookArgs) (BooleanResult, *RequestsError) {
+	return setWebhook(bot.token, url, port, path, args.Certificate, args.MaxConnections, args.AllowedUpdates)
 }
 
 func (bot *Bot) DeleteWebhook() (BooleanResult, *RequestsError) {
 	return deleteWebhook(bot.token)
+}
+
+func (bot *Bot) GetWebhookInfo() (GetWebhookInfoResult, *RequestsError) {
+	return getWebhookInfo(bot.token)
 }

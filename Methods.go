@@ -460,6 +460,7 @@ func sendAudioByID(botToken string, chatID int64, fileID string, caption string,
 
 func sendVoiceBytes(botToken string, chatID int64, fileBytes []byte, fileName string, caption string, parseMode int,
 	duration int, disableNotification bool, replyToMessageId int) (SendVoiceResult, *RequestsError) {
+
 	kwargs := make(map[string]string)
 	kwargs["chat_id"] = strconv.Itoa(int(chatID))
 	if fileBytes != nil {
@@ -486,26 +487,35 @@ func sendVoiceBytes(botToken string, chatID int64, fileBytes []byte, fileName st
 
 func deleteWebhook(botToken string) (BooleanResult, *RequestsError) {
 	booleanResult := BooleanResult{}
-	res, err := MakeRequest(baseUrl+"bot"+botToken+"/deleteWebhook", nil, make(map[string]string))
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/deleteWebhook", nil, nil)
 	toApiResult(res, &booleanResult)
 	return booleanResult, err
 }
 
-func setWebhook(botToken string, url string, certificate []byte,
+func getWebhookInfo(botToken string) (GetWebhookInfoResult, *RequestsError) {
+	webhookInfoResult := GetWebhookInfoResult{}
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/getWebhookInfo", nil, nil)
+	toApiResult(res, &webhookInfoResult)
+	return webhookInfoResult, err
+}
+
+func setWebhook(botToken string, url string, port int, path string, certificate string,
 	maxConnections int, allowedUpdates []string) (BooleanResult, *RequestsError) {
 	booleanResult := BooleanResult{}
 	kwargs := make(map[string]string)
-	if certificate != nil {
+	certBytes := ReadFileBytes(certificate)
+	if certBytes != nil {
 		kwargs["filename"] = "certificate.pem"
 		kwargs["filetype"] = "certificate"
 	} else {
 		panic("AO do sta il certificato")
 	}
-	kwargs["url"] = url
+	//							url:port/path
+	kwargs["url"] = fmt.Sprintf("%s:%d/%s", url, port, path)
 	if maxConnections != 0 {
 		kwargs["max_connections"] = strconv.Itoa(maxConnections)
 	}
-	res, err := MakeRequest(baseUrl+"bot"+botToken+"/setWebhook", certificate, kwargs)
+	res, err := MakeRequest(baseUrl+"bot"+botToken+"/setWebhook", certBytes, kwargs)
 
 	toApiResult(res, &booleanResult)
 
