@@ -1,6 +1,7 @@
 package gobot
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
@@ -192,7 +193,15 @@ func (bot *Bot) RunServer(port int, useTLS bool) error {
 	router.Handle("/push", http.HandlerFunc(bot.webhookUpdateHandler))
 	router.Handle("/update", http.HandlerFunc(bot.pushUpdateHandler))
 
-	bot.server = &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: router}
+	var TLSconfig *tls.Config
+
+	if useTLS {
+		TLSconfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	}
+
+	bot.server = &http.Server{Addr: fmt.Sprintf(":%d", port), Handler: router, TLSConfig: TLSconfig}
 	if useTLS {
 		return bot.server.ListenAndServeTLS("certificate.pem", "server.key")
 	}
