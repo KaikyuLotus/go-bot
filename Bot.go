@@ -2,7 +2,9 @@ package gobot
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
@@ -79,13 +81,24 @@ func (bot *Bot) pushUpdateHandler(rw http.ResponseWriter, req *http.Request) {
 
 func (bot *Bot) webhookUpdateHandler(rw http.ResponseWriter, req *http.Request) {
 	fmt.Println("Update!")
-	updates := GetUpdateResult{}
-	toApiResult(req.Body, &updates)
-	for _, update := range updates.Result {
+	body, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var updates []Update
+	err = json.Unmarshal(body, &updates)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, update := range updates {
 		bot.elaborateUpdate(update)
 	}
+
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("Thanks!"))
+	fmt.Println("Readed.")
 }
 
 func (bot *Bot) elaborateUpdate(update Update) {
