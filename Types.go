@@ -149,18 +149,18 @@ type ReplyToMessage struct {
 }
 
 type Message struct {
-	ReplyTo   ReplyToMessage `json:"reply_to_message"`
-	MessageID int            `json:"message_id"`
-	Text      string         `json:"text"`
-	From      User           `json:"from"`
-	Chat      Chat           `json:"chat"`
-	Date      int            `json:"date"`
-	Sticker   Sticker        `json:"sticker"`
-	Voice     Voice          `json:"voice"`
-	Audio     Audio          `json:"audio"`
-	Document  Document       `json:"document"`
-	Photo     []Photo        `json:"photo"`
-	Args      []string
+	ReplyTo  ReplyToMessage `json:"reply_to_message"`
+	ID       int            `json:"message_id"`
+	Text     string         `json:"text"`
+	From     User           `json:"from"`
+	Chat     Chat           `json:"chat"`
+	Date     int            `json:"date"`
+	Sticker  Sticker        `json:"sticker"`
+	Voice    Voice          `json:"voice"`
+	Audio    Audio          `json:"audio"`
+	Document Document       `json:"document"`
+	Photo    []Photo        `json:"photo"`
+	Args     []string
 }
 
 type CallbackQuery struct {

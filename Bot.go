@@ -110,7 +110,7 @@ func (bot *Bot) webhookUpdateHandler(rw http.ResponseWriter, req *http.Request) 
 
 func (bot *Bot) elaborateUpdate(update Update) {
 	var uType string
-	if update.Message.MessageID != 0 {
+	if update.Message.ID != 0 {
 		uType = "message"
 	} else if update.CallbackQuery.ID != "" {
 		uType = "callback_query"
