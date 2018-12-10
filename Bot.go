@@ -23,7 +23,7 @@ So please don't kill me <3
 func NewBot(token string) (*Bot, *RequestsError) {
 	bot := &Bot{
 		token:   token,
-		Running: true,
+		Running: false,
 		router:  http.NewServeMux(),
 	}
 
@@ -229,7 +229,7 @@ func (bot *Bot) StartWebhook(url string, port int, certificateFileName string,
 		Handler:   bot.router,
 		TLSConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-
+	bot.Running = true
 	go bot.server.ListenAndServeTLS(certificateFileName, serverKeyFileName)
 }
 
