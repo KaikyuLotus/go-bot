@@ -1,6 +1,7 @@
 package gobot
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -23,6 +24,7 @@ func NewBot(token string) (*Bot, *RequestsError) {
 	bot := &Bot{
 		token:   token,
 		Running: true,
+		router:  http.NewServeMux(),
 	}
 
 	_, err := bot.getMe()
@@ -31,6 +33,10 @@ func NewBot(token string) (*Bot, *RequestsError) {
 	}
 	bot.authorized = true
 	return bot, nil
+}
+
+func (bot *Bot) StopServer() {
+	bot.server.Shutdown(context.Background())
 }
 
 func (bot *Bot) SetUpdateHandler(foo UpdateHandlerType) *Bot {
@@ -50,6 +56,22 @@ func (bot *Bot) SetPanicHandler(foo PanicHandlerType) *Bot {
 
 func (bot *Bot) AddCommandHandler(command string, foo CommandHandlerType) {
 	bot.CommandHandlers = append(bot.CommandHandlers, CommandStruct{strings.ToLower(command), foo})
+}
+
+func (bot *Bot) MakeContext(function ServerPathFunctionTypeRAW) ServerPathFunctionType {
+	return func(resp http.ResponseWriter, req *http.Request) {
+		function(bot, resp, req)
+	}
+}
+
+func (bot *Bot) RegisterServerPathFunction(path string, function ServerPathFunctionTypeRAW) {
+	if bot.Running {
+		panic("ServerPathFunctions must be registered befor bot.Start()!")
+	}
+	if !strings.HasPrefix(path, "/") {
+		fmt.Printf("Cannot add ServerPathFunction %s, path doesn't start with '/'", path)
+	}
+	bot.router.Handle(path, http.HandlerFunc(bot.MakeContext(function)))
 }
 
 func (bot *Bot) getMe() (GetMeResult, *RequestsError) {
@@ -72,11 +94,6 @@ func (bot *Bot) getUpdates(offset int64, timeout bool) (GetUpdateResult, *Reques
 		return GetUpdateResult{}, err
 	}
 	return updates, nil
-}
-
-func (bot *Bot) pushUpdateHandler(rw http.ResponseWriter, req *http.Request) {
-	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte("Thanks!"))
 }
 
 func (bot *Bot) webhookUpdateHandler(rw http.ResponseWriter, req *http.Request) {
@@ -205,13 +222,11 @@ func (bot *Bot) StartWebhook(url string, port int, certificateFileName string,
 		SetWebhookArgs{Certificate: certificateFileName},
 	)
 
-	router := http.NewServeMux()
-	router.Handle("/push", http.HandlerFunc(bot.pushUpdateHandler))
-	router.Handle("/update", http.HandlerFunc(bot.webhookUpdateHandler))
+	bot.router.Handle("/update", http.HandlerFunc(bot.webhookUpdateHandler))
 
 	bot.server = &http.Server{
 		Addr:      fmt.Sprintf(":%d", port),
-		Handler:   router,
+		Handler:   bot.router,
 		TLSConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
@@ -224,6 +239,7 @@ func (bot *Bot) StartPolling(clean bool) *Bot {
 		log.Println("Updates cleaned!")
 	}
 
+	bot.Running = true
 	go bot.pollingFunction() // I'll take care of the goroutine later
 	return bot
 }

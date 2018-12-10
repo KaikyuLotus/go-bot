@@ -47,6 +47,10 @@ type CommandStruct struct {
 	Function CommandHandlerType
 }
 
+type ServerPathFunctionTypeRAW func(*Bot, http.ResponseWriter, *http.Request)
+
+type ServerPathFunctionType func(http.ResponseWriter, *http.Request)
+
 type UpdateHandlerType func(*Bot, Update)
 
 type CallbackHandlerType func(*Bot, CallbackQuery)
@@ -120,12 +124,14 @@ type Bot struct {
 	token                string
 	authorized           bool
 	UpdateHandler        UpdateHandlerType
+	router               *http.ServeMux
 	server               *http.Server
 	CallbackQueryHandler CallbackHandlerType
 	CommandHandlers      []CommandStruct
 	ErrorHandler         PanicHandlerType
 	Offset               int64
 	Running              bool
+	MasterID             int
 }
 
 type ReplyToMessage struct {
